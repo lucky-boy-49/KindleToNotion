@@ -1,8 +1,8 @@
-﻿package org.ktn.kindletonotion.kindle.model;
+package org.ktn.kindletonotion.kindle.model;
 
+import lombok.AllArgsConstructor;
 import lombok.Data;
 
-import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -10,16 +10,19 @@ import java.util.List;
  * 书籍模型
  */
 @Data
+@AllArgsConstructor
 public class Book {
 
     private String name;
 
     private String author;
 
-    private String url;
-
     private Integer nums;
 
-    private List<Mark> marks = new ArrayList<>();
+    private List<Mark> marks;
+
+    public void  markNumsSelfIncreasing() {
+        nums++;
+    }
 
 }
