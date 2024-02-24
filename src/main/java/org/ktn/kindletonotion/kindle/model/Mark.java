@@ -21,4 +21,6 @@ public class Mark {
 
     private String content;
 
+    private String notes;
+
 }

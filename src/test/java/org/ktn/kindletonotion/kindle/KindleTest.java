@@ -1,6 +1,7 @@
 package org.ktn.kindletonotion.kindle;
 
 import org.junit.jupiter.api.Test;
+import org.ktn.kindletonotion.kindle.model.Book;
 import org.ktn.kindletonotion.kindle.service.KindleService;
 
 import java.text.ParseException;
@@ -8,13 +9,14 @@ import java.text.SimpleDateFormat;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.Date;
+import java.util.Map;
 
 public class KindleTest {
 
     @Test
     public void parseNotesTest() {
         KindleService kindleService = new KindleService();
-        kindleService.parseNotes("G:\\IdeaProjects\\KindleToNotion\\src\\main\\resources\\My Clippings.txt");
+        Map<String, Book> books = kindleService.parseNotes("G:\\IdeaProjects\\KindleToNotion\\src\\main\\resources\\My Clippings.txt");
     }
 
     @Test

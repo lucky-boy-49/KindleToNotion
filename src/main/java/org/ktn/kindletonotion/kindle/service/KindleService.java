@@ -1,8 +1,10 @@
 package org.ktn.kindletonotion.kindle.service;
 
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.io.input.BOMInputStream;
 import org.ktn.kindletonotion.kindle.model.Book;
 import org.ktn.kindletonotion.kindle.model.Mark;
+import org.ktn.kindletonotion.kindle.model.NoMarkNotes;
 import org.springframework.stereotype.Service;
 
 import java.io.*;
@@ -12,6 +14,7 @@ import java.text.SimpleDateFormat;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.*;
+import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
@@ -26,59 +29,88 @@ public class KindleService {
 
         Map<String, Book> books = new HashMap<>(16);
 
+        // 记录笔记位置Map，用于保存每一个位置的笔记所在的books中的位置，当读取到一条笔记时，把他保存在到这本书的这条标注中。
+        Map<String, Mark> noteToMark = new HashMap<>(16);
+
+        // 未进行笔记登记的笔记
+        List<NoMarkNotes> noMarkNotesList = new LinkedList<>();
+
         // 获取全部笔记比进行遍历
         for (String note : getAllNotes(filePath)) {
             // 对笔记进行分割，四个部分：
             String[] mark = note.split("\n");
             if (mark.length == 3) {
-                // 去除掉书名中一些特殊的字符，用来拆分出简短的书名
-                String[] bookInfo = Pattern.compile("[()<>|\\[\\]（）《》【】｜]\\s*").split(mark[0]);
-                // 获取书名
-                String name = !bookInfo[0].isEmpty() ? bookInfo[0] : mark[0];
-                // 获取该书的作者
-                String author;
-                if (bookInfo.length > 1) {
-                    String a = bookInfo[bookInfo.length - 1];
-                    author = "Unknown".equals(a) ? "" : a;
-                } else {
-                    author = "";
-                }
-
                 // 获取笔记信息
                 String[] markInfo = mark[1].split("\\|");
 
                 // 获取笔记位置
                 String markAddress = markInfo[0].substring(2).trim();
 
-                // 获取笔记时间
-                String dateString = markInfo[1].trim().substring(4);
-                // 时间模式
-                SimpleDateFormat inputFormat = new SimpleDateFormat("yyyy年MM月dd日E ahh:mm:ss");
-                LocalDateTime markTime = null;
-                try {
-                    Date parse = inputFormat.parse(dateString);
-                    markTime = parse.toInstant().atZone(ZoneId.systemDefault()).toLocalDateTime();
-                } catch (ParseException e) {
-                    log.error("字符串转化日期错误", e);
-                }
+                // 去除掉书名中一些特殊的字符，用来拆分出简短的书名
+                String[] bookInfo = Pattern.compile("[()<>|\\[\\]（）《》【】｜]\\s*").split(mark[0]);
+                // 获取书名
+                String name = !bookInfo[0].isEmpty() ? bookInfo[0] : mark[0];
 
                 // 获取笔记内容
                 String markContent = mark[2];
 
-                Mark markNode = new Mark(markTime, dateString, markAddress, markContent);
-                if (books.containsKey(name)) {
-                    // 如果map中存在则直接加入一条笔记
-                    Book book = books.get(name);
-                    // 添加一条笔记
-                    book.getMarks().add(markNode);
-                    // 笔记数自增
-                    book.markNumsSelfIncreasing();
-                } else {
-                    // 如果map中不存在这本书则添加书再添加笔记；
-                    List<Mark> markList = new LinkedList<>();
-                    markList.add(markNode);
-                    Book book = new Book(name, author, 1, markList);
-                    books.put(name, book);
+                // 截取出具体位置拼接书名：使用正则表达式匹配#到“的”之前的文字；
+                Matcher matcher = Pattern.compile("#(.*?)(?=的)").matcher(markAddress);
+                // 具体位置
+                String position = null;
+                if (matcher.find()) {
+                    position = name +  matcher.group().split("-")[0].replaceAll("\\D", "");
+                }
+
+                if (markAddress.endsWith("标注")) {
+                    // 获取该书的作者
+                    String author;
+                    if (bookInfo.length > 1) {
+                        String a = bookInfo[bookInfo.length - 1];
+                        author = "Unknown".equals(a) ? "" : a;
+                    } else {
+                        author = "";
+                    }
+
+                    // 获取笔记时间
+                    String dateString = markInfo[1].trim().substring(4);
+                    // 时间模式
+                    SimpleDateFormat inputFormat = new SimpleDateFormat("yyyy年MM月dd日E ahh:mm:ss");
+                    LocalDateTime markTime = null;
+                    try {
+                        Date parse = inputFormat.parse(dateString);
+                        markTime = parse.toInstant().atZone(ZoneId.systemDefault()).toLocalDateTime();
+                    } catch (ParseException e) {
+                        log.error("字符串转化日期错误", e);
+                    }
+
+                    Mark markNode = new Mark(markTime, dateString, markAddress, markContent, null);
+                    if (books.containsKey(name)) {
+                        // 如果map中存在则直接加入一条笔记
+                        Book book = books.get(name);
+                        // 添加一条笔记
+                        book.getMarks().add(markNode);
+                        // 笔记数自增
+                        book.markNumsSelfIncreasing();
+                    } else {
+                        // 如果map中不存在这本书则添加书再添加笔记；
+                        List<Mark> markList = new LinkedList<>();
+                        markList.add(markNode);
+                        Book book = new Book(name, author, 1, markList);
+                        books.put(name, book);
+                    }
+                    if (position != null && !position.isEmpty() && !noteToMark.containsKey(position)) {
+                        noteToMark.put(position, markNode);
+                    }
+
+                } else if (position != null && !position.isEmpty()) {
+                    if (noteToMark.containsKey(position)) {
+                        // 把笔记保存到对应的标注
+                        noteToMark.get(position).setNotes(markContent);
+                    } else {
+                        // 未找到标注的笔记
+                        noMarkNotesList.add(new NoMarkNotes(position, markContent));
+                    }
                 }
 
 
@@ -87,6 +119,14 @@ public class KindleService {
             }
         }
 
+        // 处理未找到标注的笔记
+        noMarkNotesList.forEach(note -> {
+            String position = note.getPosition();
+            if (noteToMark.containsKey(position)) {
+                // 把笔记保存到对应的标注
+                noteToMark.get(position).setNotes(note.getContent());
+            }
+        });
 
         return books;
 
@@ -100,9 +140,11 @@ public class KindleService {
     private String[] getAllNotes(String filePath) {
         File notes = new File(filePath);
 
-        // 以UTF-8编码读取文件
-        try (BufferedReader reader = new BufferedReader(
-                new InputStreamReader(new FileInputStream(notes), StandardCharsets.UTF_8))) {
+        // 以UTF-8编码读取文件并删除bom
+        try (FileInputStream fis = new FileInputStream(filePath);
+             BOMInputStream bomInputStream = BOMInputStream.builder().setInputStream(fis).get();
+             InputStreamReader isr = new InputStreamReader(bomInputStream, StandardCharsets.UTF_8);
+             BufferedReader reader = new BufferedReader(isr)) {
 
             // 分隔符，kindle中每个笔记以==========进行分割
             String delimiter = "==========\n";
