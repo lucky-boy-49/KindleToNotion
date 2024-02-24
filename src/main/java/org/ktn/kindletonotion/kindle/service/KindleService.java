@@ -63,54 +63,11 @@ public class KindleService {
                 }
 
                 if (markAddress.endsWith("标注")) {
-                    // 获取该书的作者
-                    String author;
-                    if (bookInfo.length > 1) {
-                        String a = bookInfo[bookInfo.length - 1];
-                        author = "Unknown".equals(a) ? "" : a;
-                    } else {
-                        author = "";
-                    }
-
-                    // 获取笔记时间
-                    String dateString = markInfo[1].trim().substring(4);
-                    // 时间模式
-                    SimpleDateFormat inputFormat = new SimpleDateFormat("yyyy年MM月dd日E ahh:mm:ss");
-                    LocalDateTime markTime = null;
-                    try {
-                        Date parse = inputFormat.parse(dateString);
-                        markTime = parse.toInstant().atZone(ZoneId.systemDefault()).toLocalDateTime();
-                    } catch (ParseException e) {
-                        log.error("字符串转化日期错误", e);
-                    }
-
-                    Mark markNode = new Mark(markTime, dateString, markAddress, markContent, null);
-                    if (books.containsKey(name)) {
-                        // 如果map中存在则直接加入一条笔记
-                        Book book = books.get(name);
-                        // 添加一条笔记
-                        book.getMarks().add(markNode);
-                        // 笔记数自增
-                        book.markNumsSelfIncreasing();
-                    } else {
-                        // 如果map中不存在这本书则添加书再添加笔记；
-                        List<Mark> markList = new LinkedList<>();
-                        markList.add(markNode);
-                        Book book = new Book(name, author, 1, markList);
-                        books.put(name, book);
-                    }
-                    if (position != null && !position.isEmpty() && !noteToMark.containsKey(position)) {
-                        noteToMark.put(position, markNode);
-                    }
+                    // 处理标注
+                    ProcessMarkup(bookInfo, markInfo, markAddress, markContent, books, name, position, noteToMark);
 
                 } else if (position != null && !position.isEmpty()) {
-                    if (noteToMark.containsKey(position)) {
-                        // 把笔记保存到对应的标注
-                        noteToMark.get(position).setNotes(markContent);
-                    } else {
-                        // 未找到标注的笔记
-                        noMarkNotesList.add(new NoMarkNotes(position, markContent));
-                    }
+                    ProcessingNotes(noteToMark, position, markContent, noMarkNotesList);
                 }
 
 
@@ -120,16 +77,107 @@ public class KindleService {
         }
 
         // 处理未找到标注的笔记
+        ProcessingNotes(noMarkNotesList, noteToMark);
+
+        return books;
+
+    }
+
+    /**
+     * 处理笔记
+     * @param noteToMark 标注与位置关系Map
+     * @param position 笔记位置
+     * @param markContent 笔记内容
+     * @param noMarkNotesList 未进行笔记登记的笔记
+     */
+    private static void ProcessingNotes(Map<String, Mark> noteToMark, String position, String markContent, List<NoMarkNotes> noMarkNotesList) {
+        if (noteToMark.containsKey(position)) {
+            // 把笔记保存到对应的标注
+            savingNotesToMarkup(noteToMark, position, markContent);
+        } else {
+            // 未找到标注的笔记
+            noMarkNotesList.add(new NoMarkNotes(position, markContent));
+        }
+    }
+
+    /**
+     * 处理标注
+     * @param bookInfo 书信息
+     * @param markInfo 标注信息
+     * @param markAddress 标注位置
+     * @param markContent 标注内容
+     * @param books 书集合
+     * @param name 书名
+     * @param position 笔记位置
+     * @param noteToMark 标注与位置关系Map
+     */
+    private static void ProcessMarkup(String[] bookInfo, String[] markInfo, String markAddress, String markContent, Map<String, Book> books, String name, String position, Map<String, Mark> noteToMark) {
+        // 获取该书的作者
+        String author;
+        if (bookInfo.length > 1) {
+            String a = bookInfo[bookInfo.length - 1];
+            author = "Unknown".equals(a) ? "" : a;
+        } else {
+            author = "";
+        }
+
+        // 获取笔记时间
+        String dateString = markInfo[1].trim().substring(4);
+        // 时间模式
+        SimpleDateFormat inputFormat = new SimpleDateFormat("yyyy年MM月dd日E ahh:mm:ss");
+        LocalDateTime markTime = null;
+        try {
+            Date parse = inputFormat.parse(dateString);
+            markTime = parse.toInstant().atZone(ZoneId.systemDefault()).toLocalDateTime();
+        } catch (ParseException e) {
+            log.error("字符串转化日期错误", e);
+        }
+
+        Mark markNode = new Mark(markTime, dateString, markAddress, markContent, null, false);
+        if (books.containsKey(name)) {
+            // 如果map中存在则直接加入一条笔记
+            Book book = books.get(name);
+            // 添加一条笔记
+            book.getMarks().add(markNode);
+            // 笔记数自增
+            book.markNumsSelfIncreasing();
+        } else {
+            // 如果map中不存在这本书则添加书再添加笔记；
+            List<Mark> markList = new LinkedList<>();
+            markList.add(markNode);
+            Book book = new Book(name, author, 1, markList);
+            books.put(name, book);
+        }
+        if (position != null && !position.isEmpty() && !noteToMark.containsKey(position)) {
+            noteToMark.put(position, markNode);
+        }
+    }
+
+    /**
+     * 把笔记保存到对应的标注
+     * @param noteToMark 标注与位置关系Map
+     * @param position 笔记位置
+     * @param markContent 笔记内容
+     */
+    private static void savingNotesToMarkup(Map<String, Mark> noteToMark, String position, String markContent) {
+        Mark noteMark = noteToMark.get(position);
+        noteMark.setNote(markContent);
+        noteMark.setHaveNote(true);
+    }
+
+    /**
+     * 处理未找到标注的笔记
+     * @param noMarkNotesList 未找到标注的笔记
+     * @param noteToMark 标注与位置关系Map
+     */
+    private static void ProcessingNotes(List<NoMarkNotes> noMarkNotesList, Map<String, Mark> noteToMark) {
         noMarkNotesList.forEach(note -> {
             String position = note.getPosition();
             if (noteToMark.containsKey(position)) {
                 // 把笔记保存到对应的标注
-                noteToMark.get(position).setNotes(note.getContent());
+                savingNotesToMarkup(noteToMark, position, note.getContent());
             }
         });
-
-        return books;
-
     }
 
     /**
@@ -138,7 +186,6 @@ public class KindleService {
      * @return 笔记数组
      */
     private String[] getAllNotes(String filePath) {
-        File notes = new File(filePath);
 
         // 以UTF-8编码读取文件并删除bom
         try (FileInputStream fis = new FileInputStream(filePath);

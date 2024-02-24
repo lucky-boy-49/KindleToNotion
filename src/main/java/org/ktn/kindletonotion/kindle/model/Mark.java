@@ -21,6 +21,8 @@ public class Mark {
 
     private String content;
 
-    private String notes;
+    private String note;
+
+    private boolean haveNote;
 
 }
