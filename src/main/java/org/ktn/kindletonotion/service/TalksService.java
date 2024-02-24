@@ -18,10 +18,10 @@ public class TalksService {
         return new Talk(
                 page.getId(),
                 page.getProperties().get("Title").get("title").get(0).get("text").get("content").asText(),
-                LocalDateTime.parse(page.getProperties().get("Last Edited").get("last_edited_time").asText(), DateTimeFormatter.ISO_DATE_TIME),
-                LocalDate.parse(page.getProperties().get("Last Highlighted").get("date").get("start").asText(), DateTimeFormatter.ISO_DATE),
-                LocalDate.parse(page.getProperties().get("Last Synced").get("date").get("start").asText(), DateTimeFormatter.ISO_DATE),
-                page.getProperties().get("Author").get("rich_text").get(0).get("text").get("content").asText(),
+                LocalDateTime.parse(page.getProperties().get("最后编辑").get("last_edited_time").asText(), DateTimeFormatter.ISO_DATE_TIME),
+                LocalDate.parse(page.getProperties().get("最后标记").get("date").get("start").asText(), DateTimeFormatter.ISO_DATE),
+                LocalDate.parse(page.getProperties().get("上次同步").get("date").get("start").asText(), DateTimeFormatter.ISO_DATE),
+                page.getProperties().get("作者").get("rich_text").get(0).get("text").get("content").asText(),
                 page.getUrl()
         );
     }
