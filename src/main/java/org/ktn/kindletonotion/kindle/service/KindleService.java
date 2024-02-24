@@ -49,7 +49,7 @@ public class KindleService {
                 // 去除掉书名中一些特殊的字符，用来拆分出简短的书名
                 String[] bookInfo = Pattern.compile("[()<>|\\[\\]（）《》【】｜]\\s*").split(mark[0]);
                 // 获取书名
-                String name = !bookInfo[0].isEmpty() ? bookInfo[0] : mark[0];
+                String name = (!bookInfo[0].isEmpty() ? bookInfo[0] : mark[0]).trim();
 
                 // 获取笔记内容
                 String markContent = mark[2];
@@ -65,8 +65,8 @@ public class KindleService {
                 if (markAddress.endsWith("标注")) {
                     // 处理标注
                     ProcessMarkup(bookInfo, markInfo, markAddress, markContent, books, name, position, noteToMark);
-
                 } else if (position != null && !position.isEmpty()) {
+                    // 处理笔记
                     ProcessingNotes(noteToMark, position, markContent, noMarkNotesList);
                 }
 
@@ -146,7 +146,7 @@ public class KindleService {
             List<Mark> markList = new LinkedList<>();
             markList.add(markNode);
             Book book = new Book(name, author, 1, markList);
-            books.put(name, book);
+            books.put(name + "_" + author, book);
         }
         if (position != null && !position.isEmpty() && !noteToMark.containsKey(position)) {
             noteToMark.put(position, markNode);
