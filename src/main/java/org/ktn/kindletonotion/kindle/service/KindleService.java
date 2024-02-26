@@ -5,6 +5,7 @@ import org.apache.commons.io.input.BOMInputStream;
 import org.ktn.kindletonotion.kindle.model.Book;
 import org.ktn.kindletonotion.kindle.model.Mark;
 import org.ktn.kindletonotion.kindle.model.NoMarkNotes;
+import org.ktn.kindletonotion.utils.FilePathUtil;
 import org.springframework.stereotype.Service;
 
 import java.io.*;
@@ -25,6 +26,11 @@ import java.util.regex.Pattern;
 @Service
 public class KindleService {
 
+    /**
+     * 处理标注文件，以书为分类进行处理
+     * @param filePath 文件路径
+     * @return 书名和书信息的Map对象；
+     */
     public Map<String, Book> parseNotes(String filePath) {
 
         Map<String, Book> books = new HashMap<>(16);
@@ -216,6 +222,14 @@ public class KindleService {
             throw new RuntimeException(e);
         }
 
+    }
+
+    /**
+     * 获取文件路径
+     * @return 文件路径
+     */
+    public String getFilePath() {
+        return FilePathUtil.getFilePath();
     }
 
 }
