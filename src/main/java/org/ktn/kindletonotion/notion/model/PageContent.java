@@ -7,22 +7,21 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
+ * 页的内容
  * @author 贺佳
- * 数据库模型
  */
 @Data
-public class Database {
+public class PageContent {
 
     private String object;
 
     @JsonProperty("results")
-    private List<PageData> pageDataLIst = new ArrayList<>();
+    private List<Block> blockList = new ArrayList<>();
 
     @JsonProperty("next_cursor")
     private String nextCursor;
 
     @JsonProperty("has_more")
     private Boolean hasMore;
-
 
 }

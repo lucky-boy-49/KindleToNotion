@@ -2,8 +2,8 @@ package org.ktn.kindletonotion.notion.service;
 
 import lombok.extern.slf4j.Slf4j;
 import org.ktn.kindletonotion.notion.config.NotionConfigProperties;
-import org.ktn.kindletonotion.notion.model.Database;
-import org.ktn.kindletonotion.notion.model.PageData;
+import org.ktn.kindletonotion.notion.model.Block;
+import org.ktn.kindletonotion.notion.model.PageContent;
 import org.ktn.kindletonotion.notion.utils.HttpHeaderUtil;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpMethod;
@@ -14,13 +14,9 @@ import org.springframework.web.client.RestTemplate;
 import java.util.List;
 import java.util.Objects;
 
-/**
- * @author 贺佳
- * Database操作
- */
 @Slf4j
 @Service
-public class DatabaseService {
+public class PageService {
 
     private final NotionConfigProperties notionConfigProps;
 
@@ -28,31 +24,30 @@ public class DatabaseService {
 
     private final HttpHeaderUtil httpHeaderUtil;
 
-    public DatabaseService(NotionConfigProperties notionConfigProps, RestTemplate restTemplate, HttpHeaderUtil httpHeaderUtil) {
+    public PageService(NotionConfigProperties notionConfigProps, RestTemplate restTemplate, HttpHeaderUtil httpHeaderUtil) {
         this.notionConfigProps = notionConfigProps;
         this.restTemplate = restTemplate;
         this.httpHeaderUtil = httpHeaderUtil;
     }
 
+
     /**
-     * 获取数据库的所有页信息
-     * @param databaseId 数据库id
-     * @return 页信息
+     * 获取一个页面下的所有子项
+     * @param pageId 页id
+     * @param pageSize 页大小
+     * @return 子项数据
      */
-    public List<PageData> queryPages(String databaseId) {
-
-        String url = notionConfigProps.apiUrl() + "/v1/databases/" + databaseId + "/query";
-        log.info("查询Notion数据库：{}", url);
-
-        ResponseEntity<Database> db = restTemplate.exchange(
+    public List<Block> queryBlocks(String pageId, int pageSize) {
+        String url = notionConfigProps.apiUrl() + "/v1/blocks/" + pageId + "children?page_size=" + pageSize;
+        log.info("查询Notion页数据：{}", url);
+        ResponseEntity<PageContent> db = restTemplate.exchange(
                 url,
-                HttpMethod.POST,
+                HttpMethod.GET,
                 new HttpEntity<>(httpHeaderUtil.getDefaultHeaders()),
-                Database.class
+                PageContent.class
         );
 
-        return Objects.requireNonNull(db.getBody()).getPageDataLIst();
-
+        return Objects.requireNonNull(db.getBody()).getBlockList();
     }
 
 }

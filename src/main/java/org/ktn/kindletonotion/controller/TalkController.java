@@ -3,7 +3,7 @@ package org.ktn.kindletonotion.controller;
 import org.ktn.kindletonotion.model.Talk;
 import org.ktn.kindletonotion.notion.NotionClient;
 import org.ktn.kindletonotion.notion.config.NotionConfigProperties;
-import org.ktn.kindletonotion.notion.model.Page;
+import org.ktn.kindletonotion.notion.model.PageData;
 import org.ktn.kindletonotion.service.TalksService;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -33,8 +33,8 @@ public class TalkController {
      */
     @GetMapping("/findAll")
     public List<Talk> findAll() {
-        List<Page> pages = client.database.query(notionConfigProperties.databaseId());
-        return pages.stream().map(TalksService::mapPageToTalk).toList();
+        List<PageData> pageDataLIst = client.database.queryPages(notionConfigProperties.databaseId());
+        return pageDataLIst.stream().map(TalksService::mapPageToTalk).toList();
     }
 
 }

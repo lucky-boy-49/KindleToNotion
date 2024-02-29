@@ -5,7 +5,7 @@ import org.ktn.kindletonotion.kindle.model.Book;
 import org.ktn.kindletonotion.model.React;
 import org.ktn.kindletonotion.notion.NotionClient;
 import org.ktn.kindletonotion.notion.config.NotionConfigProperties;
-import org.ktn.kindletonotion.notion.model.Page;
+import org.ktn.kindletonotion.notion.model.PageData;
 import org.ktn.kindletonotion.service.KindleToNotionService;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -50,9 +50,14 @@ public class KindleToNotionController {
         Map<String, Book> books = kindleClient.kindle.parseNotes(filePath);
 
         // 查询所有读书笔记下面的所有书信息
-        List<Page> pages = notionClient.database.query(notionConfigProperties.databaseId());
+        List<PageData> pageDataList = notionClient.database.queryPages(notionConfigProperties.databaseId());
         // 把书信息转换为Map，Key-书名+作者，value-书信息
-        Map<String, Page> pageMap = kindleToNotionService.pagesToMap(pages);
+        Map<String, PageData> pageMap = kindleToNotionService.pagesToMap(pageDataList);
+
+        // 处理书籍进行上传
+        books.forEach((bookName, book) -> {
+            kindleToNotionService.uploadBookNote(bookName, book, pageMap);
+        });
 
         return new React("00000", "上传成功", null);
     }

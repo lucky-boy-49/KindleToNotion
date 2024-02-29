@@ -140,7 +140,8 @@ public class KindleService {
         }
 
         Mark markNode = new Mark(markTime, dateString, markAddress, markContent, null, false);
-        if (books.containsKey(name)) {
+        String key = name + "_" + author;
+        if (books.containsKey(key)) {
             // 如果map中存在则直接加入一条笔记
             Book book = books.get(name);
             // 添加一条笔记
@@ -152,7 +153,7 @@ public class KindleService {
             List<Mark> markList = new LinkedList<>();
             markList.add(markNode);
             Book book = new Book(name, author, 1, markList);
-            books.put(name + "_" + author, book);
+            books.put(key, book);
         }
         if (position != null && !position.isEmpty() && !noteToMark.containsKey(position)) {
             noteToMark.put(position, markNode);

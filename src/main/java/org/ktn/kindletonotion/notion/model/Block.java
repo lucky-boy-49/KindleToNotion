@@ -7,15 +7,17 @@ import lombok.Data;
 import java.time.LocalDateTime;
 
 /**
+ * 页面中的子项
  * @author 贺佳
- * notion页面模型
  */
 @Data
-public class Page {
+public class Block {
 
     private String object;
 
     private String id;
+
+    private JsonNode parent;
 
     @JsonProperty("created_time")
     private LocalDateTime createdTime;
@@ -23,14 +25,14 @@ public class Page {
     @JsonProperty("last_edited_time")
     private LocalDateTime lastEditedTime;
 
-    private JsonNode cover;
+    private String type;
 
-    private JsonNode icon;
+    private JsonNode callout;
 
-    private Boolean archived;
+    private JsonNode quote;
 
-    private String url;
+    private JsonNode paragraph;
 
-    private JsonNode properties;
+    private JsonNode divider;
 
 }
