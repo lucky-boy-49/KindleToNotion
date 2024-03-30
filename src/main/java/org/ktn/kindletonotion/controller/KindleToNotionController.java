@@ -39,7 +39,7 @@ public class KindleToNotionController {
 
 
     @GetMapping("/conversions")
-    public React Conversions() {
+    public React conversions() {
 
         // 读取所有笔记文件
         String filePath = kindleClient.kindle.getFilePath();

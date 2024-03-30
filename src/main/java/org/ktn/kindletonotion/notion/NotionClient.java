@@ -1,8 +1,8 @@
 package org.ktn.kindletonotion.notion;
 
-import org.ktn.kindletonotion.notion.service.BlockService;
-import org.ktn.kindletonotion.notion.service.DatabaseService;
-import org.ktn.kindletonotion.notion.service.PageService;
+import org.ktn.kindletonotion.notion.service.broker.BlockServiceBroker;
+import org.ktn.kindletonotion.notion.service.broker.DatabaseServiceBroker;
+import org.ktn.kindletonotion.notion.service.broker.PageServiceBroker;
 import org.springframework.stereotype.Component;
 
 /**
@@ -12,13 +12,13 @@ import org.springframework.stereotype.Component;
 @Component
 public class NotionClient {
 
-    public final DatabaseService database;
+    public final DatabaseServiceBroker database;
 
-    public final PageService page;
+    public final PageServiceBroker page;
 
-    public final BlockService block;
+    public final BlockServiceBroker block;
 
-    public NotionClient(DatabaseService database, PageService page, BlockService block) {
+    public NotionClient(DatabaseServiceBroker database, PageServiceBroker page, BlockServiceBroker block) {
         this.database = database;
         this.page = page;
         this.block = block;

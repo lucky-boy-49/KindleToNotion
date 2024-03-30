@@ -1,43 +1,25 @@
 package org.ktn.kindletonotion.notion.service;
 
-import lombok.extern.slf4j.Slf4j;
-import org.ktn.kindletonotion.notion.config.NotionConfigProperties;
-import org.ktn.kindletonotion.notion.utils.HttpHeaderUtil;
-import org.springframework.http.HttpEntity;
-import org.springframework.http.HttpMethod;
-import org.springframework.http.HttpStatus;
+import org.ktn.kindletonotion.notion.model.PageContent;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.stereotype.Service;
-import org.springframework.web.client.RestTemplate;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestHeader;
+import org.springframework.web.service.annotation.GetExchange;
+import org.springframework.web.service.annotation.PatchExchange;
 
-@Slf4j
-@Service
-public class BlockService {
+/**
+ * notion Block API
+ * @author 贺佳
+ */
+public interface BlockService {
 
-    private final NotionConfigProperties notionConfigProps;
+    @PatchExchange(value = "/v1/blocks/{blockId}", contentType = MediaType.APPLICATION_JSON_VALUE)
+    ResponseEntity<String> patchBlock(@PathVariable String blockId, @RequestBody String requestBody, @RequestHeader HttpHeaders headers);
 
-    private final RestTemplate restTemplate;
-
-    private final HttpHeaderUtil httpHeaderUtil;
-
-    public BlockService(NotionConfigProperties notionConfigProps, RestTemplate restTemplate, HttpHeaderUtil httpHeaderUtil) {
-        this.notionConfigProps = notionConfigProps;
-        this.restTemplate = restTemplate;
-        this.httpHeaderUtil = httpHeaderUtil;
-    }
-
-    public void updateBlock(String blockId, String requestBody) {
-        String url = notionConfigProps.apiUrl() + "/v1/blocks/" + blockId;
-        log.info("更新Notion子项数据：{}", url);
-        ResponseEntity<String> db = restTemplate.exchange(
-                url,
-                HttpMethod.PATCH,
-                new HttpEntity<>(requestBody, httpHeaderUtil.getDefaultHeaders()),
-                String.class
-        );
-        if (db.getStatusCode() != HttpStatus.OK) {
-            log.error("更新Notion子项数据失败：{}", db);
-        }
-    }
+    @GetExchange(value = "/v1/blocks/{pageId}/children?page_size={pageSize}")
+    ResponseEntity<PageContent> queryBlocks(String pageId, int pageSize, @RequestHeader HttpHeaders headers);
 
 }

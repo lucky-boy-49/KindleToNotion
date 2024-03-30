@@ -46,7 +46,7 @@ public class KindleToNotionService {
             // 计算notion的页大小，笔记数*4
             int notionPageSize = pageData.getProperties().get("笔记数").get("number").asInt() * 4;
             // 获取页的详细数据
-            List<Block> blocks = notionClient.page.queryBlocks(pageId, notionPageSize);
+            List<Block> blocks = notionClient.block.queryBlocks(pageId, notionPageSize);
             upload(book, blocks, notionPageSize);
 
         } else {
