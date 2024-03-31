@@ -65,4 +65,30 @@ public class BlockServiceBroker {
         return Objects.requireNonNull(response.getBody()).getBlockList();
     }
 
+    /**
+     * 向页面追加子项
+     * @param pageId 页id
+     * @param requestBody 请求体
+     */
+    public void additionBlock(String pageId, String requestBody) {
+        log.info("向页面追加子项");
+        WebClient client = WebClient.builder().baseUrl(notionConfigProps.apiUrl()).build();
+        HttpServiceProxyFactory factory = HttpServiceProxyFactory.builderFor(WebClientAdapter.create(client)).build();
+        BlockService service = factory.createClient(BlockService.class);
+        ResponseEntity<String> response = service.additionBlock(pageId, requestBody, httpHeaderUtil.getDefaultHeaders());
+        if (response.getStatusCode() != HttpStatus.OK) {
+            log.error("向页面追加子项失败：{}", response);
+        }
+    }
+
+    public void deleteBlock(String blockId) {
+        log.info("删除子项");
+        WebClient client = WebClient.builder().baseUrl(notionConfigProps.apiUrl()).build();
+        HttpServiceProxyFactory factory = HttpServiceProxyFactory.builderFor(WebClientAdapter.create(client)).build();
+        BlockService service = factory.createClient(BlockService.class);
+        ResponseEntity<String> response = service.deleteBlock(blockId, httpHeaderUtil.getDefaultHeaders());
+        if (response.getStatusCode() != HttpStatus.OK) {
+            log.error("删除子项失败：{}", response);
+        }
+    }
 }

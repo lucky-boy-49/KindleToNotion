@@ -23,6 +23,6 @@ public class Mark {
 
     private String note;
 
-    private boolean haveNote;
+    private Boolean haveNote;
 
 }

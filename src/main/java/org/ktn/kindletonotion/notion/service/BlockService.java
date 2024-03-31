@@ -7,6 +7,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
+import org.springframework.web.service.annotation.DeleteExchange;
 import org.springframework.web.service.annotation.GetExchange;
 import org.springframework.web.service.annotation.PatchExchange;
 
@@ -20,6 +21,11 @@ public interface BlockService {
     ResponseEntity<String> patchBlock(@PathVariable String blockId, @RequestBody String requestBody, @RequestHeader HttpHeaders headers);
 
     @GetExchange(value = "/v1/blocks/{pageId}/children?page_size={pageSize}")
-    ResponseEntity<PageContent> queryBlocks(String pageId, int pageSize, @RequestHeader HttpHeaders headers);
+    ResponseEntity<PageContent> queryBlocks(@PathVariable String pageId, @PathVariable int pageSize, @RequestHeader HttpHeaders headers);
 
+    @PatchExchange(value = "/v1/blocks/{pageId}/children", contentType = MediaType.APPLICATION_JSON_VALUE)
+    ResponseEntity<String> additionBlock(@PathVariable String pageId, @RequestBody String requestBody, @RequestHeader HttpHeaders defaultHeaders);
+
+    @DeleteExchange(value = "/v1/blocks/{blockId}")
+    ResponseEntity<String> deleteBlock(@PathVariable String blockId, @RequestHeader HttpHeaders defaultHeaders);
 }

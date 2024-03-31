@@ -1,6 +1,5 @@
-package org.ktn.kindletonotion.model;
+package org.ktn.kindletonotion.model.notion;
 
-import com.google.gson.Gson;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -10,9 +9,10 @@ import lombok.Setter;
  */
 @Setter
 @Getter
-public class Callout {
+public class Paragraph {
 
-    private RichText[] rich_text;
+    private RichText[] richText;
+    private String color;
 
     @Setter
     @Getter
@@ -31,12 +31,9 @@ public class Callout {
 
     }
 
-    @Override
-    public String toString() {
-        return new Gson().toJson(this);
-    }
-
-    public Callout() {
-        this.rich_text = new RichText[1];
+    public Paragraph() {
+        this.richText = new RichText[1];
+        this.richText[0] = new RichText();
+        this.color = "default";
     }
 }

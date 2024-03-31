@@ -70,10 +70,10 @@ public class KindleService {
 
                 if (markAddress.endsWith("标注")) {
                     // 处理标注
-                    ProcessMarkup(bookInfo, markInfo, markAddress, markContent, books, name, position, noteToMark);
+                    processMarkup(bookInfo, markInfo, markAddress, markContent, books, name, position, noteToMark);
                 } else if (position != null && !position.isEmpty()) {
                     // 处理笔记
-                    ProcessingNotes(noteToMark, position, markContent, noMarkNotesList);
+                    processingNotes(noteToMark, position, markContent, noMarkNotesList);
                 }
 
 
@@ -83,7 +83,7 @@ public class KindleService {
         }
 
         // 处理未找到标注的笔记
-        ProcessingNotes(noMarkNotesList, noteToMark);
+        processingNotes(noMarkNotesList, noteToMark);
 
         return books;
 
@@ -96,7 +96,7 @@ public class KindleService {
      * @param markContent 笔记内容
      * @param noMarkNotesList 未进行笔记登记的笔记
      */
-    private static void ProcessingNotes(Map<String, Mark> noteToMark, String position, String markContent, List<NoMarkNotes> noMarkNotesList) {
+    private static void processingNotes(Map<String, Mark> noteToMark, String position, String markContent, List<NoMarkNotes> noMarkNotesList) {
         if (noteToMark.containsKey(position)) {
             // 把笔记保存到对应的标注
             savingNotesToMarkup(noteToMark, position, markContent);
@@ -117,7 +117,7 @@ public class KindleService {
      * @param position 笔记位置
      * @param noteToMark 标注与位置关系Map
      */
-    private static void ProcessMarkup(String[] bookInfo, String[] markInfo, String markAddress, String markContent, Map<String, Book> books, String name, String position, Map<String, Mark> noteToMark) {
+    private static void processMarkup(String[] bookInfo, String[] markInfo, String markAddress, String markContent, Map<String, Book> books, String name, String position, Map<String, Mark> noteToMark) {
         // 获取该书的作者
         String author;
         if (bookInfo.length > 1) {
@@ -177,7 +177,7 @@ public class KindleService {
      * @param noMarkNotesList 未找到标注的笔记
      * @param noteToMark 标注与位置关系Map
      */
-    private static void ProcessingNotes(List<NoMarkNotes> noMarkNotesList, Map<String, Mark> noteToMark) {
+    private static void processingNotes(List<NoMarkNotes> noMarkNotesList, Map<String, Mark> noteToMark) {
         noMarkNotesList.forEach(note -> {
             String position = note.getPosition();
             if (noteToMark.containsKey(position)) {
