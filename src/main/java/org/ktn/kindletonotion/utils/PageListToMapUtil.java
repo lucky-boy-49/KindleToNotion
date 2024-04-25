@@ -1,6 +1,6 @@
 package org.ktn.kindletonotion.utils;
 
-import org.ktn.kindletonotion.notion.model.PageData;
+import org.ktn.kindletonotion.notion.model.page.PageData;
 
 import java.util.HashMap;
 import java.util.List;

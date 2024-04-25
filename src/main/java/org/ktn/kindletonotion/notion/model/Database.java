@@ -2,6 +2,7 @@ package org.ktn.kindletonotion.notion.model;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Data;
+import org.ktn.kindletonotion.notion.model.page.PageData;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -16,7 +17,7 @@ public class Database {
     private String object;
 
     @JsonProperty("results")
-    private List<PageData> pageDataLIst = new ArrayList<>();
+    private List<PageData> pageDataList = new ArrayList<>();
 
     @JsonProperty("next_cursor")
     private String nextCursor;

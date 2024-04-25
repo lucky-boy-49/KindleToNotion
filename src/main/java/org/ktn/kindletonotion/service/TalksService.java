@@ -1,7 +1,7 @@
 package org.ktn.kindletonotion.service;
 
 import org.ktn.kindletonotion.model.Talk;
-import org.ktn.kindletonotion.notion.model.PageData;
+import org.ktn.kindletonotion.notion.model.page.PageData;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;

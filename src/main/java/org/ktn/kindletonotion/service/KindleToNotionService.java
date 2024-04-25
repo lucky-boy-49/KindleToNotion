@@ -1,12 +1,14 @@
 package org.ktn.kindletonotion.service;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.ktn.kindletonotion.kindle.model.Book;
 import org.ktn.kindletonotion.kindle.model.Mark;
-import org.ktn.kindletonotion.model.notion.*;
-import org.ktn.kindletonotion.model.request.*;
+import org.ktn.kindletonotion.model.notion.block.type.*;
 import org.ktn.kindletonotion.notion.NotionClient;
 import org.ktn.kindletonotion.notion.model.Block;
-import org.ktn.kindletonotion.notion.model.PageData;
+import org.ktn.kindletonotion.notion.model.page.PageData;
+import org.ktn.kindletonotion.notion.model.page.PageProperties;
+import org.ktn.kindletonotion.notion.utils.JsonUtil;
 import org.ktn.kindletonotion.utils.PageListToMapUtil;
 import org.springframework.stereotype.Service;
 
@@ -55,7 +57,7 @@ public class KindleToNotionService {
             int notionPageSize = markNum * 4;
             // 获取页的所有子项
             List<Block> blocks = notionClient.block.queryBlocks(pageId, notionPageSize);
-            upload(book, blocks, notionPageSize, pageId, pageData);
+            upload(book, blocks, notionPageSize, pageData);
 
         } else {
             // notion中不存在
@@ -64,7 +66,7 @@ public class KindleToNotionService {
 
     }
 
-    private void upload(Book book, List<Block> blocks, int notionPageSize, String pageId, PageData pageData) {
+    private void upload(Book book, List<Block> blocks, int notionPageSize, PageData pageData) {
         // 最后标记时间
         LocalDateTime lastMarkTime = LocalDateTime.of(1900, 1, 1, 0, 0, 0);
 
@@ -87,27 +89,24 @@ public class KindleToNotionService {
                 // 获取积木id
                 String blockId = blocks.get(j++).getId();
                 // 更新callout请求体
-                Callout callout = new Callout();
-                callout.getRichText()[0].getText().setContent(mark.getContent());
-                String requestBody = new RequestBodyCallout(callout).toString();
+                Callout callout = new Callout(mark.getContent());
+                String requestBody = JsonUtil.toJson(callout);
                 // 发送更新请求
                 notionClient.block.updateBlock(blockId, requestBody);
 
                 // 获取积木id
                 blockId = blocks.get(j++).getId();
                 // 更新quote请求体
-                Quote quote = new Quote();
-                callout.getRichText()[0].getText().setContent(mark.getHaveNote() ? mark.getNote() : "无");
-                requestBody = new RequestBodyQuote(quote).toString();
+                Quote quote = new Quote(mark.getHaveNote() ? mark.getNote() : "无");
+                requestBody = JsonUtil.toJson(quote);
                 // 发送更新请求
                 notionClient.block.updateBlock(blockId, requestBody);
 
                 // 获取积木id
                 blockId = blocks.get(j++).getId();
                 // 更新paragraph请求体
-                Paragraph paragraph = new Paragraph();
-                callout.getRichText()[0].getText().setContent(mark.getAddress());
-                requestBody = new RequestBodyParagraph(paragraph).toString();
+                Paragraph paragraph = new Paragraph(mark.getAddress());
+                requestBody = JsonUtil.toJson(paragraph);
                 // 发送更新请求
                 notionClient.block.updateBlock(blockId, requestBody);
 
@@ -115,32 +114,17 @@ public class KindleToNotionService {
                 blockId = blocks.get(j++).getId();
                 // 更新divider请求体
                 Divider divider = new Divider();
-                requestBody = new RequestBodyDivider(divider).toString();
+                requestBody = JsonUtil.toJson(divider);
                 // 发送更新请求
                 notionClient.block.updateBlock(blockId, requestBody);
                 
             } else if ((i - 1) * 4 > notionPageSize) {
                 // 如果笔记数大于当前notion笔记则进行追加笔记
-                BlockAbstract[] children = new BlockAbstract[4];
-                // 创建callout
-                BlockCallout callout = new BlockCallout();
-                callout.getCallout().getRichText()[0].getText().setContent(mark.getContent());
-                children[0] = callout;
-                // 创建quote
-                BlockQuote quote = new BlockQuote();
-                quote.getQuote().getRichText()[0].getText().setContent(mark.getHaveNote() ? mark.getNote() : "无");
-                children[1] = quote;
-                // 创建paragraph
-                BlockParagraph paragraph = new BlockParagraph();
-                paragraph.getParagraph().getRichText()[0].getText().setContent(mark.getAddress());
-                children[2] = paragraph;
-                // 创建divider
-                BlockDivider divider = new BlockDivider();
-                children[3] = divider;
+                Children children = getChildren(mark);
                 // 创建请求体
-                String requestBody = new RequestBodyBlock(children).toString();
+                String requestBody = JsonUtil.toJson(children);
                 // 发送追加请求
-                notionClient.block.additionBlock(pageId, requestBody);
+                notionClient.block.additionBlock(pageData.getId(), requestBody);
 
             }
         }
@@ -152,7 +136,30 @@ public class KindleToNotionService {
             }
         }
         // 更新页面属性
+        PageProperties properties = new PageProperties(book.getNums(), lastMarkTime.toString());
+        String requestBody = JsonUtil.toJson(properties);
+        // 发送更新请求
+        notionClient.page.updatePageProperties(pageData.getId(), requestBody);
 
+    }
+
+    private static Children getChildren(Mark mark) {
+        ObjectMapper mapper = new ObjectMapper();
+        Children children = new Children();
+
+        // 创建callout
+        Callout callout = new Callout(mark.getContent(), "gray_background");
+        children.setCallout(mapper.valueToTree(callout));
+        // 创建quote
+        Quote quote = new Quote(mark.getHaveNote() ? mark.getNote() : "无");
+        children.setQuote(mapper.valueToTree(quote));
+        // 创建paragraph
+        Paragraph paragraph = new Paragraph(mark.getAddress(), "");
+        children.setParagraph(mapper.valueToTree(paragraph));
+        // 创建divider
+        Divider divider = new Divider();
+        children.setDivider(mapper.valueToTree(divider));
+        return children;
     }
 
 

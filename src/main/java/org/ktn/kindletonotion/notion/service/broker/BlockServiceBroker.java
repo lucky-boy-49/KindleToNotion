@@ -3,7 +3,7 @@ package org.ktn.kindletonotion.notion.service.broker;
 import lombok.extern.slf4j.Slf4j;
 import org.ktn.kindletonotion.notion.config.NotionConfigProperties;
 import org.ktn.kindletonotion.notion.model.Block;
-import org.ktn.kindletonotion.notion.model.PageContent;
+import org.ktn.kindletonotion.notion.model.page.PageContent;
 import org.ktn.kindletonotion.notion.service.BlockService;
 import org.ktn.kindletonotion.notion.utils.HttpHeaderUtil;
 import org.springframework.http.HttpStatus;
@@ -81,6 +81,10 @@ public class BlockServiceBroker {
         }
     }
 
+    /**
+     * 删除页面中的某个块
+     * @param blockId 块Id
+     */
     public void deleteBlock(String blockId) {
         log.info("删除子项");
         WebClient client = WebClient.builder().baseUrl(notionConfigProps.apiUrl()).build();

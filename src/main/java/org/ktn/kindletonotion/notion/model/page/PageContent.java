@@ -1,7 +1,8 @@
-package org.ktn.kindletonotion.notion.model;
+package org.ktn.kindletonotion.notion.model.page;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Data;
+import org.ktn.kindletonotion.notion.model.Block;
 
 import java.util.ArrayList;
 import java.util.List;

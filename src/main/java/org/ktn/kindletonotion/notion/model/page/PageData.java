@@ -1,4 +1,4 @@
-package org.ktn.kindletonotion.notion.model;
+package org.ktn.kindletonotion.notion.model.page;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.JsonNode;

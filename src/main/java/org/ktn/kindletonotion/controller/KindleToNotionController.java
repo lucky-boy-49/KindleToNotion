@@ -5,7 +5,7 @@ import org.ktn.kindletonotion.kindle.model.Book;
 import org.ktn.kindletonotion.model.React;
 import org.ktn.kindletonotion.notion.NotionClient;
 import org.ktn.kindletonotion.notion.config.NotionConfigProperties;
-import org.ktn.kindletonotion.notion.model.PageData;
+import org.ktn.kindletonotion.notion.model.page.PageData;
 import org.ktn.kindletonotion.service.KindleToNotionService;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -55,9 +55,7 @@ public class KindleToNotionController {
         Map<String, PageData> pageMap = kindleToNotionService.pagesToMap(pageDataList);
 
         // 处理书籍进行上传
-        books.forEach((bookName, book) -> {
-            kindleToNotionService.uploadBookNote(bookName, book, pageMap);
-        });
+        books.forEach((bookName, book) -> kindleToNotionService.uploadBookNote(bookName, book, pageMap));
 
         return new React("00000", "上传成功", null);
     }

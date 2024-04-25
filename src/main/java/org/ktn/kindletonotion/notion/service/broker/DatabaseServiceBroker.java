@@ -3,7 +3,7 @@ package org.ktn.kindletonotion.notion.service.broker;
 import lombok.extern.slf4j.Slf4j;
 import org.ktn.kindletonotion.notion.config.NotionConfigProperties;
 import org.ktn.kindletonotion.notion.model.Database;
-import org.ktn.kindletonotion.notion.model.PageData;
+import org.ktn.kindletonotion.notion.model.page.PageData;
 import org.ktn.kindletonotion.notion.service.DatabaseService;
 import org.ktn.kindletonotion.notion.utils.HttpHeaderUtil;
 import org.springframework.http.ResponseEntity;
