@@ -1,6 +1,7 @@
 package org.ktn.kindletonotion.kindle.service;
 
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.io.ByteOrderMark;
 import org.apache.commons.io.input.BOMInputStream;
 import org.ktn.kindletonotion.kindle.model.Book;
 import org.ktn.kindletonotion.kindle.model.Mark;
@@ -146,7 +147,7 @@ public class KindleService {
         String key = name + "_" + author;
         if (books.containsKey(key)) {
             // 如果map中存在则直接加入一条笔记
-            Book book = books.get(name);
+            Book book = books.get(key);
             // 添加一条笔记
             book.getMarks().add(markNode);
             // 笔记数自增
@@ -199,10 +200,13 @@ public class KindleService {
 
         // 以UTF-8编码读取文件并删除bom
         try (FileInputStream fis = new FileInputStream(filePath);
-             BOMInputStream bomInputStream = BOMInputStream.builder().setInputStream(fis).get();
-             InputStreamReader isr = new InputStreamReader(bomInputStream, StandardCharsets.UTF_8);
-             BufferedReader reader = new BufferedReader(isr)) {
-
+                BOMInputStream bomInputStream = BOMInputStream.builder()
+                .setInputStream(fis)
+                .setByteOrderMarks(ByteOrderMark.UTF_8)
+                .get()
+             ) {
+            InputStreamReader isr = new InputStreamReader(bomInputStream, StandardCharsets.UTF_8);
+            BufferedReader reader = new BufferedReader(isr);
             // 分隔符，kindle中每个笔记以==========进行分割
             String delimiter = "==========\n";
 
@@ -213,6 +217,9 @@ public class KindleService {
             while ((line = reader.readLine()) != null) {
                 if (line.isEmpty()) {
                     continue;
+                }
+                if (line.startsWith("\uFEFF")) {
+                    line = line.replace("\uFEFF", "");
                 }
                 content.append(line).append("\n");
             }
