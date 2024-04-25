@@ -20,17 +20,24 @@ public class NotionUtil {
         ObjectMapper mapper = JsonUtil.getMapper();
 
         // 标题
-        ObjectNode title = mapper.createObjectNode();
+        ObjectNode preTitle = mapper.createObjectNode();
+        ArrayNode nextTile = mapper.createArrayNode();
+        ObjectNode node = mapper.createObjectNode();
         ObjectNode text = mapper.createObjectNode();
         text.put("content", book.getName());
-        title.set("title", text);
-        properties.setTitle(title);
+        node.set("text", text);
+        nextTile.add(node);
+        preTitle.set("title", nextTile);
+        properties.setTitle(preTitle);
 
         // 作者
         ObjectNode author = mapper.createObjectNode();
         ArrayNode richText = mapper.createArrayNode();
-        text = mapper.createObjectNode();
-        text.put("content", book.getAuthor());
+        ObjectNode text2 = mapper.createObjectNode();
+        ObjectNode content = mapper.createObjectNode();
+        content.put("content", book.getAuthor());
+        text2.set("text", content);
+        richText.add(text2);
         author.set("rich_text", richText);
         properties.setAuthor(author);
 
