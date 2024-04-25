@@ -34,8 +34,8 @@ public class PageProperties {
         // 更新最后标记时间
         ObjectNode lastMarkDate = mapper.createObjectNode();
         ObjectNode date = mapper.createObjectNode();
-        date.set("start", date);
-        lastMarkDate.put("date", markDate);
+        date.put("start", markDate);
+        lastMarkDate.set("date", date);
         rootNode.set("最后标记", lastMarkDate);
         // 更新上次同步
         ObjectNode lastSynced = mapper.createObjectNode();

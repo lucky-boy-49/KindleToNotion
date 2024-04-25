@@ -25,12 +25,14 @@ public class JsonUtil {
 
     public static ArrayNode getRichText(String content) {
         ArrayNode richText = MAPPER.createArrayNode();
-        ObjectNode text = MAPPER.createObjectNode();
-        ObjectNode con = MAPPER.createObjectNode();
-        con.put("content", content);
-        text.put("type", "text");
-        text.set("text", con);
-        richText.add(text);
+        StringUtil.splitString(content, 2000).forEach(s -> {
+            ObjectNode text = MAPPER.createObjectNode();
+            ObjectNode con = MAPPER.createObjectNode();
+            con.put("content", s);
+            text.put("type", "text");
+            text.set("text", con);
+            richText.add(text);
+        });
         return richText;
     }
 

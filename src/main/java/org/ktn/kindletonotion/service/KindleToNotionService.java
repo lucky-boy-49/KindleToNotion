@@ -81,7 +81,7 @@ public class KindleToNotionService {
             LocalDateTime lastMarkTime = LocalDateTime.of(1900, 1, 1, 0, 0, 0);
             if (StringUtils.hasLength(pageId)) {
                 for (Mark mark : book.getMarks()) {
-                    lastMarkTime = lastMarkTime.isAfter(mark.getTime()) ?  mark.getTime() : lastMarkTime;
+                    lastMarkTime = lastMarkTime.isBefore(mark.getTime()) ?  mark.getTime() : lastMarkTime;
                     appendBlock(pageId, mark);
                 }
 
@@ -136,7 +136,7 @@ public class KindleToNotionService {
         for (; i < totalNum + 1; i++) {
             // 获取标注
             Mark mark = marks.get(i - 1);
-            lastMarkTime = lastMarkTime.isAfter(mark.getTime()) ?  mark.getTime() : lastMarkTime;
+            lastMarkTime = lastMarkTime.isBefore(mark.getTime()) ?  mark.getTime() : lastMarkTime;
 
             // 当前的标注未超出notion页已有的笔记数，即（i-1）*4<=notionPageSize
             if ((i - 1) * 4 <= notionPageSize) {
