@@ -44,7 +44,7 @@ public class DatabaseServiceBroker {
         HttpServiceProxyFactory factory = HttpServiceProxyFactory.builderFor(WebClientAdapter.create(client)).build();
         DatabaseService service = factory.createClient(DatabaseService.class);
         ResponseEntity<Database> response = service.queryPages(databaseId, httpHeaderUtil.getDefaultHeaders());
-        return Objects.requireNonNull(response.getBody()).getPageDataLIst();
+        return Objects.requireNonNull(response.getBody()).getPageDataList();
     }
 
 }

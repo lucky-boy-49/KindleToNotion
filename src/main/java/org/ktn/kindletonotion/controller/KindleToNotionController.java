@@ -55,7 +55,7 @@ public class KindleToNotionController {
         Map<String, PageData> pageMap = kindleToNotionService.pagesToMap(pageDataList);
 
         // 处理书籍进行上传
-        books.forEach((bookName, book) -> kindleToNotionService.uploadBookNote(bookName, book, pageMap));
+        books.forEach((bookName, book) -> kindleToNotionService.uploadBookNote(bookName, book, pageMap, notionConfigProperties.databaseId()));
 
         return new React("00000", "上传成功", null);
     }

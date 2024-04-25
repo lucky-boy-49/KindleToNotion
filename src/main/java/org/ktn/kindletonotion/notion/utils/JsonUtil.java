@@ -41,4 +41,8 @@ public class JsonUtil {
         return icon;
     }
 
+    public static ObjectMapper getMapper() {
+        return MAPPER;
+    }
+
 }

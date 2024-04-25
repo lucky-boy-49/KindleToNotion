@@ -4,17 +4,23 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.ktn.kindletonotion.kindle.model.Book;
 import org.ktn.kindletonotion.kindle.model.Mark;
 import org.ktn.kindletonotion.model.notion.block.type.*;
+import org.ktn.kindletonotion.model.notion.page.Page;
+import org.ktn.kindletonotion.model.notion.page.Properties;
 import org.ktn.kindletonotion.notion.NotionClient;
 import org.ktn.kindletonotion.notion.model.Block;
 import org.ktn.kindletonotion.notion.model.page.PageData;
 import org.ktn.kindletonotion.notion.model.page.PageProperties;
 import org.ktn.kindletonotion.notion.utils.JsonUtil;
+import org.ktn.kindletonotion.notion.utils.NotionUtil;
 import org.ktn.kindletonotion.utils.PageListToMapUtil;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
 
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 /**
  * kindle上传notion服务
@@ -39,7 +45,14 @@ public class KindleToNotionService {
         return PageListToMapUtil.toPgeMap(pageDataList);
     }
 
-    public void uploadBookNote(String bookName, Book book, Map<String, PageData> pageMap) {
+    /**
+     * 上传图书笔记，分为数据库有该书和没有该书分别进行上传
+     * @param bookName 书名
+     * @param book 图书
+     * @param pageMap 页面数据Map
+     * @param databaseId 数据库id
+     */
+    public void uploadBookNote(String bookName, Book book, Map<String, PageData> pageMap, String databaseId) {
 
         if (pageMap.containsKey(bookName)) {
             // notion中存在
@@ -60,12 +73,47 @@ public class KindleToNotionService {
             upload(book, blocks, notionPageSize, pageData);
 
         } else {
-            // notion中不存在
-            // todo 创建页面
+            // notion中不存在当前图书
+            // 1.创建页面
+            String pageId = createPage(book, databaseId);
+            // 2.上传笔记
+            if (StringUtils.hasLength(pageId)) {
+                for (Mark mark : book.getMarks()) {
+                    appendBlock(pageId, mark);
+                }
+
+            }
         }
 
     }
 
+    /**
+     * 创建页面
+     * @param book 书信息
+     * @param databaseId 数据库id
+     * @return 页面id
+     */
+    private String createPage(Book book, String databaseId) {
+        // 创建页面json
+        Page page = new Page(databaseId);
+        // 创建页面属性
+        Properties properties = NotionUtil.getProperties(book);
+        page.setProperties(properties);
+        // 创建页面请求体
+        String requestBody = JsonUtil.toJson(page);
+        // 发送创建页面请求
+        ResponseEntity<PageData> response = notionClient.page.createPage(requestBody);
+        // 返回页面id
+        return Objects.requireNonNull(response.getBody()).getId();
+    }
+
+    /**
+     * 上传
+     * @param book 书信息
+     * @param blocks 页面块数据
+     * @param notionPageSize 页面大小
+     * @param pageData 页面数据
+     */
     private void upload(Book book, List<Block> blocks, int notionPageSize, PageData pageData) {
         // 最后标记时间
         LocalDateTime lastMarkTime = LocalDateTime.of(1900, 1, 1, 0, 0, 0);
@@ -120,11 +168,7 @@ public class KindleToNotionService {
                 
             } else if ((i - 1) * 4 > notionPageSize) {
                 // 如果笔记数大于当前notion笔记则进行追加笔记
-                Children children = getChildren(mark);
-                // 创建请求体
-                String requestBody = JsonUtil.toJson(children);
-                // 发送追加请求
-                notionClient.block.additionBlock(pageData.getId(), requestBody);
+                appendBlock(pageData.getId(), mark);
 
             }
         }
@@ -143,6 +187,24 @@ public class KindleToNotionService {
 
     }
 
+    /**
+     * 追加笔记
+     * @param pageId 页面id
+     * @param mark 笔记
+     */
+    private void appendBlock(String pageId, Mark mark) {
+        Children children = getChildren(mark);
+        // 创建请求体
+        String requestBody = JsonUtil.toJson(children);
+        // 发送追加请求
+        notionClient.block.additionBlock(pageId, requestBody);
+    }
+
+    /**
+     * 把笔记转换为json
+     * @param mark 笔记
+     * @return 笔记json
+     */
     private static Children getChildren(Mark mark) {
         ObjectMapper mapper = new ObjectMapper();
         Children children = new Children();

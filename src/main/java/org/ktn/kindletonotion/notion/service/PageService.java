@@ -8,6 +8,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.service.annotation.PatchExchange;
+import org.springframework.web.service.annotation.PostExchange;
 
 /**
  * Notion页面API
@@ -23,5 +24,14 @@ public interface PageService {
      */
     @PatchExchange(value = "/v1/pages/{pageId}", contentType = MediaType.APPLICATION_JSON_VALUE)
     ResponseEntity<PageData> updatePageProperties(@PathVariable String pageId, @RequestBody String requestBody, @RequestHeader HttpHeaders headers);
+
+    /**
+     * 创建一个页面
+     * @param requestBody 页面属性信息
+     * @param headers 请求头
+     * @return 页面数据
+     */
+    @PostExchange(value = "/v1/pages", contentType = MediaType.APPLICATION_JSON_VALUE)
+    ResponseEntity<PageData> createPage(@RequestBody String requestBody, @RequestHeader HttpHeaders headers);
 
 }

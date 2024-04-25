@@ -46,4 +46,17 @@ public class PageServiceBroker {
             log.error("更新页属性失败：{}", response);
         }
     }
+
+    public ResponseEntity<PageData> createPage(String requestBody) {
+        log.info("创建Notion页面");
+        WebClient client = WebClient.builder().baseUrl(notionConfigProps.apiUrl()).build();
+        HttpServiceProxyFactory factory = HttpServiceProxyFactory.builderFor(WebClientAdapter.create(client)).build();
+        PageService service = factory.createClient(PageService.class);
+        ResponseEntity<PageData> response = service.createPage(requestBody,  httpHeaderUtil.getDefaultHeaders());
+        if (response.getStatusCode() != HttpStatus.OK) {
+            log.error("创建页面失败：{}", response);
+        }
+        return response;
+    }
+
 }
