@@ -26,7 +26,6 @@ public class BlockServiceBroker {
 
     private final NotionConfigProperties notionConfigProps;
 
-
     private final HttpHeaderUtil httpHeaderUtil;
 
     public BlockServiceBroker(NotionConfigProperties notionConfigProps, HttpHeaderUtil httpHeaderUtil) {
