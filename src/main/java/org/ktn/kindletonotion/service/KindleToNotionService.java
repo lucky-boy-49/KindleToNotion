@@ -77,12 +77,20 @@ public class KindleToNotionService {
             // 1.创建页面
             String pageId = createPage(book, databaseId);
             // 2.上传笔记
+            // 最后标记时间
+            LocalDateTime lastMarkTime = LocalDateTime.of(1900, 1, 1, 0, 0, 0);
             if (StringUtils.hasLength(pageId)) {
                 for (Mark mark : book.getMarks()) {
+                    lastMarkTime = lastMarkTime.isAfter(mark.getTime()) ?  mark.getTime() : lastMarkTime;
                     appendBlock(pageId, mark);
                 }
 
             }
+            // 更新页面属性
+            PageProperties properties = new PageProperties(book.getNums(), lastMarkTime.toString());
+            String requestBody = JsonUtil.toJson(properties);
+            // 发送更新请求
+            notionClient.page.updatePageProperties(pageId, requestBody);
         }
 
     }
