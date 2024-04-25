@@ -6,11 +6,15 @@ import lombok.Getter;
 
 /**
  * 追加块时所使用的类型
+ * 包括{@link Callout}，{@link Divider}，{@link Paragraph}, {@link Quote}
  * @author jiahe
  */
 @Getter
 public class Children {
 
+    /**
+     * 追加块时的内容包括{@link Callout}, {@link Divider}, {@link Paragraph}, {@link Quote}
+     */
     private final ArrayNode children;
 
     public Children() {

@@ -5,6 +5,7 @@ import org.springframework.stereotype.Component;
 
 /**
  * Kindle客户端
+ * @author jiahe
  */
 @Component
 public class KindleClient {

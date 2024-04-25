@@ -38,6 +38,10 @@ public class KindleToNotionController {
     }
 
 
+    /**
+     * 上传Kindle笔记到Notion接口
+     * @return 上传结果
+     */
     @GetMapping("/conversions")
     public React conversions() {
 

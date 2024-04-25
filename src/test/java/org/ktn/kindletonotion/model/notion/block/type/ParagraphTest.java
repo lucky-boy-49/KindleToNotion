@@ -9,6 +9,8 @@ class ParagraphTest {
     void test() {
         Paragraph paragraph = new Paragraph("test");
         System.out.println(JsonUtil.toJson(paragraph));
+        paragraph = new Paragraph("test", "");
+        System.out.println(JsonUtil.toJson(paragraph));
     }
 
 }

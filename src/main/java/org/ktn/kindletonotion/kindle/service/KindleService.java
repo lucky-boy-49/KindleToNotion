@@ -8,7 +8,10 @@ import org.ktn.kindletonotion.kindle.model.NoMarkNotes;
 import org.ktn.kindletonotion.utils.FilePathUtil;
 import org.springframework.stereotype.Service;
 
-import java.io.*;
+import java.io.BufferedReader;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
@@ -19,8 +22,8 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
- * @author 贺佳
  * Kindle服务
+ * @author 贺佳
  */
 @Slf4j
 @Service

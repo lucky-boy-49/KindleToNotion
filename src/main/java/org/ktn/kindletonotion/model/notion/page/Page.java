@@ -12,8 +12,14 @@ import org.ktn.kindletonotion.notion.utils.JsonUtil;
 @Data
 public class Page {
 
+    /**
+     * 父id
+     */
     private ObjectNode parent;
 
+    /**
+     * 页属性
+     */
     private Properties properties;
 
     public Page(String databaseId) {

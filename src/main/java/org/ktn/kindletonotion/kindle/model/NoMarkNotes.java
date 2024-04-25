@@ -11,8 +11,14 @@ import lombok.Data;
 @AllArgsConstructor
 public class NoMarkNotes {
 
+    /**
+     * 笔记的位置
+     */
     private String position;
 
+    /**
+     * 评论的内容
+     */
     private String content;
 
 }
