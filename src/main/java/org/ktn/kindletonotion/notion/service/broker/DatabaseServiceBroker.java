@@ -1,11 +1,11 @@
 package org.ktn.kindletonotion.notion.service.broker;
 
 import lombok.extern.slf4j.Slf4j;
-import org.ktn.kindletonotion.notion.config.NotionConfigProperties;
+import org.ktn.kindletonotion.Exception.NotionResponseException;
+import org.ktn.kindletonotion.model.NotionReact;
 import org.ktn.kindletonotion.notion.model.Database;
 import org.ktn.kindletonotion.notion.model.page.PageData;
 import org.ktn.kindletonotion.notion.service.DatabaseService;
-import org.ktn.kindletonotion.notion.utils.HttpHeaderUtil;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
@@ -23,14 +23,10 @@ import java.util.Objects;
 @Service
 public class DatabaseServiceBroker {
 
-    private final NotionConfigProperties notionConfigProps;
+    private final WebClient client;
 
-
-    private final HttpHeaderUtil httpHeaderUtil;
-
-    public DatabaseServiceBroker(NotionConfigProperties notionConfigProps, HttpHeaderUtil httpHeaderUtil) {
-        this.notionConfigProps = notionConfigProps;
-        this.httpHeaderUtil = httpHeaderUtil;
+    public DatabaseServiceBroker(WebClient client) {
+        this.client = client;
     }
 
     /**
@@ -38,13 +34,17 @@ public class DatabaseServiceBroker {
      * @param databaseId 数据库id
      * @return 数据库数据
      */
-    public List<PageData> queryPages(String databaseId) {
+    public NotionReact<List<PageData>> queryPages(String databaseId) {
         log.info("查询Notion数据库数据");
-        WebClient client = WebClient.builder().baseUrl(notionConfigProps.apiUrl()).build();
-        HttpServiceProxyFactory factory = HttpServiceProxyFactory.builderFor(WebClientAdapter.create(client)).build();
-        DatabaseService service = factory.createClient(DatabaseService.class);
-        ResponseEntity<Database> response = service.queryPages(databaseId, httpHeaderUtil.getDefaultHeaders());
-        return Objects.requireNonNull(response.getBody()).getPageDataList();
+        try {
+            HttpServiceProxyFactory factory = HttpServiceProxyFactory.builderFor(WebClientAdapter.create(client)).build();
+            DatabaseService service = factory.createClient(DatabaseService.class);
+            ResponseEntity<Database> response = service.queryPages(databaseId);
+            return new NotionReact<>(response.getStatusCode().value(), "查询Notion数据库数据成功", Objects.requireNonNull(response.getBody()).getPageDataList());
+        } catch (NotionResponseException e) {
+            log.error("查询Notion数据库数据失败，错误码：{}，错误信息：{}", e.getCode(), e.getMessage());
+            return new NotionReact<>(e.getCode(), "查询Notion数据库数据成功", null);
+        }
     }
 
 }
