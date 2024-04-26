@@ -6,6 +6,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 
 /**
+ * KindleToNotion应用
  * @author 贺佳
  */
 @SpringBootApplication
