@@ -8,11 +8,14 @@ import org.ktn.kindletonotion.notion.NotionClient;
 import org.ktn.kindletonotion.notion.config.NotionConfigProperties;
 import org.ktn.kindletonotion.notion.model.page.PageData;
 import org.ktn.kindletonotion.service.KindleToNotionService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -24,6 +27,7 @@ import java.util.Map;
 @RequestMapping("kindleToNotion")
 public class KindleToNotionController {
 
+    private static final Logger log = LoggerFactory.getLogger(KindleToNotionController.class);
     private final NotionClient notionClient;
 
     private final KindleClient kindleClient;
@@ -56,12 +60,25 @@ public class KindleToNotionController {
         Map<String, Book> books = kindleClient.kindle.parseNotes(filePath);
 
         // 查询所有读书笔记下面的所有书信息
-        List<PageData> pageDataList;
-        NotionReact<List<PageData>> queryPagesRes = notionClient.database.queryPages(notionConfigProperties.databaseId());
+        List<PageData> pageDataList = new ArrayList<>();
+        NotionReact<Object> queryPagesRes = notionClient.database.queryPages(notionConfigProperties.databaseId());
         if (HttpStatus.OK.value() == queryPagesRes.code()) {
-                pageDataList = queryPagesRes.data();
+            Object data = queryPagesRes.data();
+            if (data instanceof List<?>) {
+                for (Object datum : (List<?>) data) {
+                    if (datum instanceof PageData) {
+                        pageDataList.add((PageData) datum);
+                    } else {
+                        log.error("数据库数据转换失败，目标格式：PageData，当前格式不是该格式子类");
+                        return new React(HttpStatus.INTERNAL_SERVER_ERROR.value(), "数据库数据转换失败", null);
+                    }
+                }
+            } else {
+                log.error("数据库数据转换失败，目标格式：List<PageData>，当前格式：{}", data.getClass().getName());
+                return new React(HttpStatus.INTERNAL_SERVER_ERROR.value(), "数据库数据转换失败", null);
+            }
         } else {
-            return new React(queryPagesRes.code(), queryPagesRes.message(), null);
+            return new React(queryPagesRes.code(), queryPagesRes.message(), queryPagesRes.data());
         }
 
         // 把书信息转换为Map，Key-书名+作者，value-书信息
