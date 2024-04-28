@@ -1,12 +1,10 @@
 package org.ktn.kindletonotion.notion.service;
 
 import org.ktn.kindletonotion.notion.model.page.PageData;
-import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.service.annotation.PatchExchange;
 import org.springframework.web.service.annotation.PostExchange;
 
@@ -32,6 +30,6 @@ public interface PageService {
      * @return 页面数据
      */
     @PostExchange(value = "/v1/pages", contentType = MediaType.APPLICATION_JSON_VALUE)
-    ResponseEntity<PageData> createPage(@RequestBody String requestBody, @RequestHeader HttpHeaders headers);
+    ResponseEntity<PageData> createPage(@RequestBody String requestBody);
 
 }

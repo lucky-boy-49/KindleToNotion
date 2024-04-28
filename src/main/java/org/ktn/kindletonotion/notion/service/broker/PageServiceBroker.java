@@ -10,8 +10,6 @@ import org.ktn.kindletonotion.notion.utils.HttpHeaderUtil;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
-import org.springframework.web.reactive.function.client.WebClient;
-import org.springframework.web.reactive.function.client.support.WebClientAdapter;
 import org.springframework.web.service.invoker.HttpServiceProxyFactory;
 
 /**
@@ -57,16 +55,26 @@ public class PageServiceBroker {
         }
     }
 
-    public ResponseEntity<PageData> createPage(String requestBody) {
-        log.info("创建Notion页面");
-        WebClient client = WebClient.builder().baseUrl(notionConfigProps.apiUrl()).build();
-        HttpServiceProxyFactory factory = HttpServiceProxyFactory.builderFor(WebClientAdapter.create(client)).build();
-        PageService service = factory.createClient(PageService.class);
-        ResponseEntity<PageData> response = service.createPage(requestBody,  httpHeaderUtil.getDefaultHeaders());
-        if (response.getStatusCode() != HttpStatus.OK) {
-            log.error("创建页面失败：{}", response);
+    /**
+     * 创建页面
+     * @param requestBody 页面数据
+     * @return 页面数据
+     */
+    public NotionReact<Object> createPage(String requestBody) {
+        try {
+            log.info("创建Notion页面");
+            PageService service = factory.createClient(PageService.class);
+            ResponseEntity<PageData> response = service.createPage(requestBody);
+            log.info("创建Notion页面成功");
+            return new NotionReact<>(response.getStatusCode().value(), "创建页面成功", response);
+        } catch (NotionResponseException e) {
+            log.error("创建Notion页面返回失败，错误码：{}，错误信息：{}", e.getCode(), e.getMessage());
+            return new NotionReact<>(e.getCode(), "创建Notion页面返回失败", e.getMessage());
+        } catch (Exception e) {
+            log.error("创建Notion页面返回失败，错误信息：{}", e.getMessage());
+            return new NotionReact<>(HttpStatus.INTERNAL_SERVER_ERROR.value(),
+                    "创建Notion页面返回失败", e.getMessage());
         }
-        return response;
     }
 
 }

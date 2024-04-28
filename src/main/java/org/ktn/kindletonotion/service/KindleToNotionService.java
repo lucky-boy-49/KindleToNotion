@@ -92,7 +92,13 @@ public class KindleToNotionService {
         } else {
             // notion中不存在当前图书
             // 1.创建页面
-            String pageId = createPage(book, databaseId);
+            NotionReact<String> createdPageRes = createPage(book, databaseId);
+            if (createdPageRes.code() != HttpStatus.OK.value()) {
+                return;
+            }
+            // 获取页面id
+            String pageId = createdPageRes.data();
+            Objects.requireNonNull(pageId);
             // 2.上传笔记
             // 最后标记时间
             LocalDateTime lastMarkTime = LocalDateTime.of(1900, 1, 1, 0, 0, 0);
@@ -124,7 +130,7 @@ public class KindleToNotionService {
      * @param databaseId 数据库id
      * @return 页面id
      */
-    private String createPage(Book book, String databaseId) {
+    private NotionReact<String> createPage(Book book, String databaseId) {
         // 创建页面json
         Page page = new Page(databaseId);
         // 创建页面属性
@@ -133,9 +139,21 @@ public class KindleToNotionService {
         // 创建页面请求体
         String requestBody = JsonUtil.toJson(page);
         // 发送创建页面请求
-        ResponseEntity<PageData> response = notionClient.page.createPage(requestBody);
-        // 返回页面id
-        return Objects.requireNonNull(response.getBody()).getId();
+        NotionReact<Object> createdPageRes = notionClient.page.createPage(requestBody);
+        if (createdPageRes.code() != HttpStatus.OK.value()) {
+            return new  NotionReact<>(createdPageRes.code(), createdPageRes.message(), null);
+        }
+        // 获取响应体
+        if (createdPageRes.data()  instanceof ResponseEntity<?> response) {
+            if (response.getBody() instanceof PageData pageData) {
+                // 返回页面id
+                return new  NotionReact<>(HttpStatus.OK.value(), book.getName() + "_" + book.getAuthor() + "创建成功",
+                        pageData.getId());
+            }
+        }
+        // 创建失败
+        return new  NotionReact<>(HttpStatus.INTERNAL_SERVER_ERROR.value(),
+                "创建Notion页面返回失败", null);
     }
 
     /**
