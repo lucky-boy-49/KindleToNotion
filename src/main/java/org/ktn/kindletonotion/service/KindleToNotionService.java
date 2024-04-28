@@ -99,7 +99,10 @@ public class KindleToNotionService {
             if (StringUtils.hasLength(pageId)) {
                 for (Mark mark : book.getMarks()) {
                     lastMarkTime = lastMarkTime.isBefore(mark.getTime()) ?  mark.getTime() : lastMarkTime;
-                    appendBlock(pageId, mark);
+                    NotionReact<String> appendBlockRes = appendBlock(pageId, mark);
+                    if (appendBlockRes.code() != HttpStatus.OK.value()) {
+                        return;
+                    }
                 }
 
             }
@@ -201,7 +204,10 @@ public class KindleToNotionService {
                 
             } else if ((i - 1) * 4 > notionPageSize) {
                 // 如果笔记数大于当前notion笔记则进行追加笔记
-                appendBlock(pageData.getId(), mark);
+                NotionReact<String> appendBlockRes = appendBlock(pageData.getId(), mark);
+                if (appendBlockRes.code() != HttpStatus.OK.value()) {
+                    return appendBlockRes;
+                }
             }
         }
         // 如果当前笔记少于notion中的笔记则删除多余的子项
@@ -241,12 +247,12 @@ public class KindleToNotionService {
      * @param pageId 页面id
      * @param mark 笔记
      */
-    private void appendBlock(String pageId, Mark mark) {
+    private NotionReact<String> appendBlock(String pageId, Mark mark) {
         Children children = getChildren(mark);
         // 创建请求体
         String requestBody = JsonUtil.toJson(children);
         // 发送追加请求
-        notionClient.block.additionBlock(pageId, requestBody);
+        return notionClient.block.additionBlock(pageId, requestBody);
     }
 
     /**

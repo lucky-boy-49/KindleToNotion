@@ -86,18 +86,26 @@ public class BlockServiceBroker {
     }
 
     /**
-     * 向页面追加子项
+     * 向页面追加Block
      * @param pageId 页id
      * @param requestBody 请求体
      */
-    public void additionBlock(String pageId, String requestBody) {
-        log.info("向页面追加子项");
-        WebClient client = WebClient.builder().baseUrl(notionConfigProps.apiUrl()).build();
-        HttpServiceProxyFactory factory = HttpServiceProxyFactory.builderFor(WebClientAdapter.create(client)).build();
-        BlockService service = factory.createClient(BlockService.class);
-        ResponseEntity<String> response = service.additionBlock(pageId, requestBody, httpHeaderUtil.getDefaultHeaders());
-        if (response.getStatusCode() != HttpStatus.OK) {
-            log.error("向页面追加子项失败：{}", response);
+    public NotionReact<String> additionBlock(String pageId, String requestBody) {
+        try {
+            log.info("向页面追加子项");
+            WebClient client = WebClient.builder().baseUrl(notionConfigProps.apiUrl()).build();
+            HttpServiceProxyFactory factory = HttpServiceProxyFactory.builderFor(WebClientAdapter.create(client)).build();
+            BlockService service = factory.createClient(BlockService.class);
+            ResponseEntity<String> response = service.additionBlock(pageId, requestBody, httpHeaderUtil.getDefaultHeaders());
+            log.info("向页面追加子项成功");
+            return new NotionReact<>(response.getStatusCode().value(), "向页面追加子项成功", null);
+        } catch (NotionResponseException e) {
+            log.error("向页面追加子项失败，错误码：{}，错误信息：{}", e.getCode(), e.getMessage());
+            return new NotionReact<>(e.getCode(), "向页面追加子项失败", e.getMessage());
+        } catch (Exception e) {
+            log.error("向页面追加子项失败：{}", e.getMessage());
+            return new NotionReact<>(HttpStatus.INTERNAL_SERVER_ERROR.value(),
+                    "向页面追加子项失败", e.getMessage());
         }
     }
 

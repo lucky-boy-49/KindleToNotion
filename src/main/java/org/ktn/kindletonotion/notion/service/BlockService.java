@@ -21,7 +21,6 @@ public interface BlockService {
      * 更新块数据
      * @param blockId 块Id
      * @param requestBody 块数据
-     * @param headers 请求头
      * @return 更新结果
      */
     @PatchExchange(value = "/v1/blocks/{blockId}", contentType = MediaType.APPLICATION_JSON_VALUE)
