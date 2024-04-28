@@ -3,10 +3,8 @@ package org.ktn.kindletonotion.notion.service.broker;
 import lombok.extern.slf4j.Slf4j;
 import org.ktn.kindletonotion.Exception.NotionResponseException;
 import org.ktn.kindletonotion.model.NotionReact;
-import org.ktn.kindletonotion.notion.config.NotionConfigProperties;
 import org.ktn.kindletonotion.notion.model.page.PageContent;
 import org.ktn.kindletonotion.notion.service.BlockService;
-import org.ktn.kindletonotion.notion.utils.HttpHeaderUtil;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
@@ -22,15 +20,9 @@ import java.util.Objects;
 @Service
 public class BlockServiceBroker {
 
-    private final NotionConfigProperties notionConfigProps;
-
-    private final HttpHeaderUtil httpHeaderUtil;
-
     private final HttpServiceProxyFactory factory;
 
-    public BlockServiceBroker(NotionConfigProperties notionConfigProps, HttpHeaderUtil httpHeaderUtil, HttpServiceProxyFactory factory) {
-        this.notionConfigProps = notionConfigProps;
-        this.httpHeaderUtil = httpHeaderUtil;
+    public BlockServiceBroker(HttpServiceProxyFactory factory) {
         this.factory = factory;
     }
 
