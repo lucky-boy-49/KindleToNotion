@@ -23,7 +23,7 @@ public interface PageService {
      * @return 页面数据
      */
     @PatchExchange(value = "/v1/pages/{pageId}", contentType = MediaType.APPLICATION_JSON_VALUE)
-    ResponseEntity<PageData> updatePageProperties(@PathVariable String pageId, @RequestBody String requestBody, @RequestHeader HttpHeaders headers);
+    ResponseEntity<PageData> updatePageProperties(@PathVariable String pageId, @RequestBody String requestBody);
 
     /**
      * 创建一个页面

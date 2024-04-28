@@ -110,7 +110,10 @@ public class KindleToNotionService {
             PageProperties properties = new PageProperties(book.getNums(), lastMarkTime.toString());
             String requestBody = JsonUtil.toJson(properties);
             // 发送更新请求
-            notionClient.page.updatePageProperties(pageId, requestBody);
+            NotionReact<String> updatePagePropertiesRes = notionClient.page.updatePageProperties(pageId, requestBody);
+            if (updatePagePropertiesRes.code() != HttpStatus.OK.value()) {
+                return;
+            }
         }
 
     }
@@ -224,7 +227,10 @@ public class KindleToNotionService {
         PageProperties properties = new PageProperties(book.getNums(), lastMarkTime.toString());
         String requestBody = JsonUtil.toJson(properties);
         // 发送更新请求
-        notionClient.page.updatePageProperties(pageData.getId(), requestBody);
+        NotionReact<String> updatePagePropertiesRes = notionClient.page.updatePageProperties(pageData.getId(), requestBody);
+        if (updatePagePropertiesRes.code() != HttpStatus.OK.value()) {
+            return updatePagePropertiesRes;
+        }
 
         return new  NotionReact<>(HttpStatus.OK.value(), book.getName() + "_" + book.getAuthor() + "上传成功", null);
     }
