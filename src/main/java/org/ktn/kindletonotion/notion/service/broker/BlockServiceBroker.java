@@ -10,8 +10,6 @@ import org.ktn.kindletonotion.notion.utils.HttpHeaderUtil;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
-import org.springframework.web.reactive.function.client.WebClient;
-import org.springframework.web.reactive.function.client.support.WebClientAdapter;
 import org.springframework.web.service.invoker.HttpServiceProxyFactory;
 
 import java.util.Objects;
@@ -28,12 +26,12 @@ public class BlockServiceBroker {
 
     private final HttpHeaderUtil httpHeaderUtil;
 
-    private final WebClient client;
+    private final HttpServiceProxyFactory factory;
 
-    public BlockServiceBroker(NotionConfigProperties notionConfigProps, HttpHeaderUtil httpHeaderUtil, WebClient client) {
+    public BlockServiceBroker(NotionConfigProperties notionConfigProps, HttpHeaderUtil httpHeaderUtil, HttpServiceProxyFactory factory) {
         this.notionConfigProps = notionConfigProps;
         this.httpHeaderUtil = httpHeaderUtil;
-        this.client = client;
+        this.factory = factory;
     }
 
     /**
@@ -44,7 +42,6 @@ public class BlockServiceBroker {
     public NotionReact<String> updateBlock(String blockId, String requestBody) {
         try {
             log.info("更新Notion页数据");
-            HttpServiceProxyFactory factory = HttpServiceProxyFactory.builderFor(WebClientAdapter.create(client)).build();
             BlockService service = factory.createClient(BlockService.class);
             ResponseEntity<String> response = service.patchBlock(blockId, requestBody);
             log.info("更新Notion页数据成功");
@@ -68,10 +65,8 @@ public class BlockServiceBroker {
     public NotionReact<Object> queryBlocks(String pageId, int pageSize) {
         try {
             log.info("查询Notion页数据");
-            WebClient client = WebClient.builder().baseUrl(notionConfigProps.apiUrl()).build();
-            HttpServiceProxyFactory factory = HttpServiceProxyFactory.builderFor(WebClientAdapter.create(client)).build();
             BlockService service = factory.createClient(BlockService.class);
-            ResponseEntity<PageContent> response = service.queryBlocks(pageId, pageSize, httpHeaderUtil.getDefaultHeaders());
+            ResponseEntity<PageContent> response = service.queryBlocks(pageId, pageSize);
             log.info("查询Notion页数据成功");
             return new NotionReact<>(response.getStatusCode().value(), "查询Notion页数据成功",
                     Objects.requireNonNull(response.getBody()).getBlockList());
@@ -93,10 +88,8 @@ public class BlockServiceBroker {
     public NotionReact<String> additionBlock(String pageId, String requestBody) {
         try {
             log.info("向页面追加子项");
-            WebClient client = WebClient.builder().baseUrl(notionConfigProps.apiUrl()).build();
-            HttpServiceProxyFactory factory = HttpServiceProxyFactory.builderFor(WebClientAdapter.create(client)).build();
             BlockService service = factory.createClient(BlockService.class);
-            ResponseEntity<String> response = service.additionBlock(pageId, requestBody, httpHeaderUtil.getDefaultHeaders());
+            ResponseEntity<String> response = service.additionBlock(pageId, requestBody);
             log.info("向页面追加子项成功");
             return new NotionReact<>(response.getStatusCode().value(), "向页面追加子项成功", null);
         } catch (NotionResponseException e) {
@@ -110,17 +103,23 @@ public class BlockServiceBroker {
     }
 
     /**
-     * 删除页面中的某个块
+     * 删除页面中的Block
      * @param blockId 块Id
      */
-    public void deleteBlock(String blockId) {
-        log.info("删除子项");
-        WebClient client = WebClient.builder().baseUrl(notionConfigProps.apiUrl()).build();
-        HttpServiceProxyFactory factory = HttpServiceProxyFactory.builderFor(WebClientAdapter.create(client)).build();
-        BlockService service = factory.createClient(BlockService.class);
-        ResponseEntity<String> response = service.deleteBlock(blockId, httpHeaderUtil.getDefaultHeaders());
-        if (response.getStatusCode() != HttpStatus.OK) {
-            log.error("删除子项失败：{}", response);
+    public NotionReact<String> deleteBlock(String blockId) {
+        try {
+            log.info("删除Block");
+            BlockService service = factory.createClient(BlockService.class);
+            ResponseEntity<String> response = service.deleteBlock(blockId);
+            log.info("删除Block成功");
+            return new NotionReact<>(response.getStatusCode().value(), "删除Block成功", null);
+        } catch (NotionResponseException e) {
+            log.error("删除Block失败，错误码：{}，错误信息：{}", e.getCode(), e.getMessage());
+            return new NotionReact<>(e.getCode(), "删除Block失败", e.getMessage());
+        } catch (Exception e) {
+            log.error("删除Block失败：{}", e.getMessage());
+            return new NotionReact<>(HttpStatus.INTERNAL_SERVER_ERROR.value(),
+                    "删除Block失败", e.getMessage());
         }
     }
 }

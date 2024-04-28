@@ -12,6 +12,8 @@ import org.springframework.http.client.ReactorResourceFactory;
 import org.springframework.http.client.reactive.ClientHttpConnector;
 import org.springframework.http.client.reactive.ReactorClientHttpConnector;
 import org.springframework.web.reactive.function.client.WebClient;
+import org.springframework.web.reactive.function.client.support.WebClientAdapter;
+import org.springframework.web.service.invoker.HttpServiceProxyFactory;
 import reactor.netty.http.client.HttpClient;
 
 import java.time.Duration;
@@ -46,11 +48,11 @@ public class KindToNotionConfig {
 
 
     /**
-     * 创建异步请求客户端Bean
-     * @return 异步请求客户端
+     * 创建HttpServiceProxyFactoryBean
+     * @return HttpServiceProxyFactory
      */
     @Bean
-    public WebClient getAsynchronousWebClient() {
+    public HttpServiceProxyFactory getHttpServiceProxyFactory() {
         Function<HttpClient, HttpClient> mapper = client -> client
                 // 设置响应超时时间
                 .responseTimeout(Duration.ofSeconds(30))
@@ -60,7 +62,7 @@ public class KindToNotionConfig {
         ClientHttpConnector connector =
                 new ReactorClientHttpConnector(resourceFactory(), mapper);
 
-        return WebClient.builder()
+        WebClient client = WebClient.builder()
                 // 设置请求地址
                 .baseUrl(notionConfigProps.apiUrl())
                 // 设置默认请求头
@@ -71,6 +73,7 @@ public class KindToNotionConfig {
                     throw new NotionResponseException(response.statusCode().value(), response.bodyToMono(String.class));
                 })
                 .build();
+        return HttpServiceProxyFactory.builderFor(WebClientAdapter.create(client)).build();
     }
 
 }

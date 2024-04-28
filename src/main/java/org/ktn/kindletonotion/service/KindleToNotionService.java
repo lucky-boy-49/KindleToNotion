@@ -214,7 +214,10 @@ public class KindleToNotionService {
         if (i * 4 < notionPageSize) {
             for (; j < notionPageSize; j++) {
                 String blockId = blocks.get(j).getId();
-                notionClient.block.deleteBlock(blockId);
+                NotionReact<String> deleteBlockRes = notionClient.block.deleteBlock(blockId);
+                if (deleteBlockRes.code() != HttpStatus.OK.value()) {
+                    return deleteBlockRes;
+                }
             }
         }
         // 更新页面属性

@@ -8,8 +8,6 @@ import org.ktn.kindletonotion.notion.service.DatabaseService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
-import org.springframework.web.reactive.function.client.WebClient;
-import org.springframework.web.reactive.function.client.support.WebClientAdapter;
 import org.springframework.web.service.invoker.HttpServiceProxyFactory;
 
 import java.util.Objects;
@@ -22,10 +20,10 @@ import java.util.Objects;
 @Service
 public class DatabaseServiceBroker {
 
-    private final WebClient client;
+    private final HttpServiceProxyFactory factory;
 
-    public DatabaseServiceBroker(WebClient client) {
-        this.client = client;
+    public DatabaseServiceBroker(HttpServiceProxyFactory factory) {
+        this.factory = factory;
     }
 
     /**
@@ -36,7 +34,6 @@ public class DatabaseServiceBroker {
     public NotionReact<Object> queryPages(String databaseId) {
         try {
             log.info("查询Notion数据库数据");
-            HttpServiceProxyFactory factory = HttpServiceProxyFactory.builderFor(WebClientAdapter.create(client)).build();
             DatabaseService service = factory.createClient(DatabaseService.class);
             ResponseEntity<Database> response = service.queryPages(databaseId);
             log.info("查询Notion数据库数据成功");
