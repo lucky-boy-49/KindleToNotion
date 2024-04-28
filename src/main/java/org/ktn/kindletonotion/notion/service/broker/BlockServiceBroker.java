@@ -4,7 +4,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.ktn.kindletonotion.Exception.NotionResponseException;
 import org.ktn.kindletonotion.model.NotionReact;
 import org.ktn.kindletonotion.notion.config.NotionConfigProperties;
-import org.ktn.kindletonotion.notion.model.Block;
 import org.ktn.kindletonotion.notion.model.page.PageContent;
 import org.ktn.kindletonotion.notion.service.BlockService;
 import org.ktn.kindletonotion.notion.utils.HttpHeaderUtil;
@@ -15,7 +14,6 @@ import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.reactive.function.client.support.WebClientAdapter;
 import org.springframework.web.service.invoker.HttpServiceProxyFactory;
 
-import java.util.List;
 import java.util.Objects;
 
 /**
@@ -62,18 +60,29 @@ public class BlockServiceBroker {
     }
 
     /**
-     * 获取某个页面下的所有子项
+     * 获取某个页面下的所有BLock
      * @param pageId 页id
      * @param pageSize 页大小
      * @return 子项数据
      */
-    public List<Block> queryBlocks(String pageId, int pageSize) {
-        log.info("查询Notion页数据");
-        WebClient client = WebClient.builder().baseUrl(notionConfigProps.apiUrl()).build();
-        HttpServiceProxyFactory factory = HttpServiceProxyFactory.builderFor(WebClientAdapter.create(client)).build();
-        BlockService service = factory.createClient(BlockService.class);
-        ResponseEntity<PageContent> response = service.queryBlocks(pageId, pageSize, httpHeaderUtil.getDefaultHeaders());
-        return Objects.requireNonNull(response.getBody()).getBlockList();
+    public NotionReact<Object> queryBlocks(String pageId, int pageSize) {
+        try {
+            log.info("查询Notion页数据");
+            WebClient client = WebClient.builder().baseUrl(notionConfigProps.apiUrl()).build();
+            HttpServiceProxyFactory factory = HttpServiceProxyFactory.builderFor(WebClientAdapter.create(client)).build();
+            BlockService service = factory.createClient(BlockService.class);
+            ResponseEntity<PageContent> response = service.queryBlocks(pageId, pageSize, httpHeaderUtil.getDefaultHeaders());
+            log.info("查询Notion页数据成功");
+            return new NotionReact<>(response.getStatusCode().value(), "查询Notion页数据成功",
+                    Objects.requireNonNull(response.getBody()).getBlockList());
+        } catch (NotionResponseException e) {
+            log.error("查询Notion页数据失败，错误码：{}，错误信息：{}", e.getCode(), e.getMessage());
+            return new NotionReact<>(e.getCode(), "查询Notion页数据失败", e.getMessage());
+        } catch (Exception e) {
+            log.error("查询Notion页数据失败：{}", e.getMessage());
+            return new NotionReact<>(HttpStatus.INTERNAL_SERVER_ERROR.value(),
+                    "查询Notion页数据失败", e.getMessage());
+        }
     }
 
     /**

@@ -20,6 +20,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
 import java.time.LocalDateTime;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -71,7 +72,21 @@ public class KindleToNotionService {
             // 计算notion的页大小，笔记数*4
             int notionPageSize = markNum * 4;
             // 获取页的所有子项
-            List<Block> blocks = notionClient.block.queryBlocks(pageId, notionPageSize);
+            NotionReact<Object> queriedBlocksRes = notionClient.block.queryBlocks(pageId, notionPageSize);
+            if (queriedBlocksRes.code() != HttpStatus.OK.value()) {
+                return;
+            }
+            // 获取页的所有子项
+            List<Block> blocks = new LinkedList<>();
+            Object data = queriedBlocksRes.data();
+            if (data instanceof List<?> blockList) {
+                for (Object block : blockList) {
+                    if (block instanceof Block) {
+                        blocks.add((Block) block);
+                    }
+                }
+            }
+            // 上传
             upload(book, blocks, notionPageSize, pageData);
 
         } else {

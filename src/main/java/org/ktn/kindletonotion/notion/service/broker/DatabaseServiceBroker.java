@@ -34,11 +34,12 @@ public class DatabaseServiceBroker {
      * @return 数据库数据
      */
     public NotionReact<Object> queryPages(String databaseId) {
-        log.info("查询Notion数据库数据");
         try {
+            log.info("查询Notion数据库数据");
             HttpServiceProxyFactory factory = HttpServiceProxyFactory.builderFor(WebClientAdapter.create(client)).build();
             DatabaseService service = factory.createClient(DatabaseService.class);
             ResponseEntity<Database> response = service.queryPages(databaseId);
+            log.info("查询Notion数据库数据成功");
             return new NotionReact<>(response.getStatusCode().value(), "查询Notion数据库数据成功", Objects.requireNonNull(response.getBody()).getPageDataList());
         } catch (NotionResponseException e) {
             log.error("查询Notion数据库数据失败，错误码：{}，错误信息：{}", e.getCode(), e.getMessage());
