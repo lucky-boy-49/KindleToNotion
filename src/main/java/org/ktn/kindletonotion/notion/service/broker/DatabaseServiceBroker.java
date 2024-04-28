@@ -43,7 +43,10 @@ public class DatabaseServiceBroker {
             return new NotionReact<>(response.getStatusCode().value(), "查询Notion数据库数据成功", Objects.requireNonNull(response.getBody()).getPageDataList());
         } catch (NotionResponseException e) {
             log.error("查询Notion数据库数据失败，错误码：{}，错误信息：{}", e.getCode(), e.getMessage());
-            return new NotionReact<>(e.getCode(), "查询Notion数据库数据成功", null);
+            return new NotionReact<>(e.getCode(), "查询Notion数据库数据失败", null);
+        } catch (Exception e) {
+            log.error("查询Notion数据库数据失败，错误信息：{}", e.getMessage());
+            return new NotionReact<>(0, "查询Notion数据库数据失败", null);
         }
     }
 
