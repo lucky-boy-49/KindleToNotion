@@ -1,6 +1,8 @@
 package org.ktn.kindletonotion.notion.service.broker;
 
 import lombok.extern.slf4j.Slf4j;
+import org.ktn.kindletonotion.Exception.NotionResponseException;
+import org.ktn.kindletonotion.model.NotionReact;
 import org.ktn.kindletonotion.notion.config.NotionConfigProperties;
 import org.ktn.kindletonotion.notion.model.Block;
 import org.ktn.kindletonotion.notion.model.page.PageContent;
@@ -28,9 +30,12 @@ public class BlockServiceBroker {
 
     private final HttpHeaderUtil httpHeaderUtil;
 
-    public BlockServiceBroker(NotionConfigProperties notionConfigProps, HttpHeaderUtil httpHeaderUtil) {
+    private final WebClient client;
+
+    public BlockServiceBroker(NotionConfigProperties notionConfigProps, HttpHeaderUtil httpHeaderUtil, WebClient client) {
         this.notionConfigProps = notionConfigProps;
         this.httpHeaderUtil = httpHeaderUtil;
+        this.client = client;
     }
 
     /**
@@ -38,14 +43,21 @@ public class BlockServiceBroker {
      * @param blockId 子项ID
      * @param requestBody 请求体
      */
-    public void updateBlock(String blockId, String requestBody) {
-        log.info("更新Notion页数据");
-        WebClient client = WebClient.builder().baseUrl(notionConfigProps.apiUrl()).build();
-        HttpServiceProxyFactory factory = HttpServiceProxyFactory.builderFor(WebClientAdapter.create(client)).build();
-        BlockService service = factory.createClient(BlockService.class);
-        ResponseEntity<String> response = service.patchBlock(blockId, requestBody, httpHeaderUtil.getDefaultHeaders());
-        if (response.getStatusCode() != HttpStatus.OK) {
-            log.error("更新Notion子项数据失败：{}", response);
+    public NotionReact<String> updateBlock(String blockId, String requestBody) {
+        try {
+            log.info("更新Notion页数据");
+            HttpServiceProxyFactory factory = HttpServiceProxyFactory.builderFor(WebClientAdapter.create(client)).build();
+            BlockService service = factory.createClient(BlockService.class);
+            ResponseEntity<String> response = service.patchBlock(blockId, requestBody);
+            log.info("更新Notion页数据成功");
+            return new NotionReact<>(response.getStatusCode().value(), "更新Notion页数据成功", null);
+        }catch (NotionResponseException e) {
+            log.error("更新Notion页数据失败，错误码：{}，错误信息：{}", e.getCode(), e.getMessage());
+            return new NotionReact<>(e.getCode(), "更新Notion页数据失败", e.getMessage());
+        } catch (Exception e) {
+            log.error("更新Notion页数据失败：{}", e.getMessage());
+            return new NotionReact<>(HttpStatus.INTERNAL_SERVER_ERROR.value(),
+                    "更新Notion页数据失败", e.getMessage());
         }
     }
 

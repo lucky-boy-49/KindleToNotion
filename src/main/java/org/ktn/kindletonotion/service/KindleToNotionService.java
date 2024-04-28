@@ -3,6 +3,7 @@ package org.ktn.kindletonotion.service;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.ktn.kindletonotion.kindle.model.Book;
 import org.ktn.kindletonotion.kindle.model.Mark;
+import org.ktn.kindletonotion.model.NotionReact;
 import org.ktn.kindletonotion.model.notion.block.type.*;
 import org.ktn.kindletonotion.model.notion.page.Page;
 import org.ktn.kindletonotion.model.notion.page.Properties;
@@ -13,6 +14,7 @@ import org.ktn.kindletonotion.notion.model.page.PageProperties;
 import org.ktn.kindletonotion.notion.utils.JsonUtil;
 import org.ktn.kindletonotion.notion.utils.NotionUtil;
 import org.ktn.kindletonotion.utils.PageListToMapUtil;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
@@ -122,7 +124,7 @@ public class KindleToNotionService {
      * @param notionPageSize 页面大小
      * @param pageData 页面数据
      */
-    private void upload(Book book, List<Block> blocks, int notionPageSize, PageData pageData) {
+    private NotionReact<String> upload(Book book, List<Block> blocks, int notionPageSize, PageData pageData) {
         // 最后标记时间
         LocalDateTime lastMarkTime = LocalDateTime.of(1900, 1, 1, 0, 0, 0);
 
@@ -146,38 +148,45 @@ public class KindleToNotionService {
                 String blockId = blocks.get(j++).getId();
                 // 更新callout请求体
                 Callout callout = new Callout(mark.getContent());
-                String requestBody = JsonUtil.toJson(callout);
-                // 发送更新请求
-                notionClient.block.updateBlock(blockId, requestBody);
+                // 更新callout请求体
+                NotionReact<String> updatedBlockRes = toUpload(callout, blockId);
+                if (updatedBlockRes != null) {
+                    return updatedBlockRes;
+                }
 
                 // 获取积木id
                 blockId = blocks.get(j++).getId();
                 // 更新quote请求体
                 Quote quote = new Quote(mark.getHaveNote() ? mark.getNote() : "无");
-                requestBody = JsonUtil.toJson(quote);
-                // 发送更新请求
-                notionClient.block.updateBlock(blockId, requestBody);
+                // 更新quote请求体
+                updatedBlockRes = toUpload(quote, blockId);
+                if (updatedBlockRes != null) {
+                    return updatedBlockRes;
+                }
 
                 // 获取积木id
                 blockId = blocks.get(j++).getId();
                 // 更新paragraph请求体
                 Paragraph paragraph = new Paragraph(mark.getAddress());
-                requestBody = JsonUtil.toJson(paragraph);
-                // 发送更新请求
-                notionClient.block.updateBlock(blockId, requestBody);
+                // 更新paragraph请求体
+                updatedBlockRes = toUpload(paragraph, blockId);
+                if (updatedBlockRes != null) {
+                    return updatedBlockRes;
+                }
 
                 // 获取积木id
                 blockId = blocks.get(j++).getId();
                 // 更新divider请求体
                 Divider divider = new Divider();
-                requestBody = JsonUtil.toJson(divider);
-                // 发送更新请求
-                notionClient.block.updateBlock(blockId, requestBody);
+                // 更新divider请求体
+                updatedBlockRes = toUpload(divider, blockId);
+                if (updatedBlockRes != null) {
+                    return updatedBlockRes;
+                }
                 
             } else if ((i - 1) * 4 > notionPageSize) {
                 // 如果笔记数大于当前notion笔记则进行追加笔记
                 appendBlock(pageData.getId(), mark);
-
             }
         }
         // 如果当前笔记少于notion中的笔记则删除多余的子项
@@ -193,6 +202,23 @@ public class KindleToNotionService {
         // 发送更新请求
         notionClient.page.updatePageProperties(pageData.getId(), requestBody);
 
+        return new  NotionReact<>(HttpStatus.OK.value(), book.getName() + "_" + book.getAuthor() + "上传成功", null);
+    }
+
+    /**
+     * 执行block更新请求
+     * @param object 请求体
+     * @param blockId BlockId
+     * @return 更新结果
+     */
+    private NotionReact<String> toUpload(Object object, String blockId) {
+        String requestBody = JsonUtil.toJson(object);
+        // 发送更新请求
+        NotionReact<String> updatedBlockRes = notionClient.block.updateBlock(blockId, requestBody);
+        if (updatedBlockRes.code() != HttpStatus.OK.value()) {
+            return new NotionReact<>(updatedBlockRes.code(), updatedBlockRes.message(), updatedBlockRes.data());
+        }
+        return null;
     }
 
     /**

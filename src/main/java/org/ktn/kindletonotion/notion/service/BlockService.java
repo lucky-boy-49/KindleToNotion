@@ -25,7 +25,7 @@ public interface BlockService {
      * @return 更新结果
      */
     @PatchExchange(value = "/v1/blocks/{blockId}", contentType = MediaType.APPLICATION_JSON_VALUE)
-    ResponseEntity<String> patchBlock(@PathVariable String blockId, @RequestBody String requestBody, @RequestHeader HttpHeaders headers);
+    ResponseEntity<String> patchBlock(@PathVariable String blockId, @RequestBody String requestBody);
 
     /**
      * 查询页面下的所有块
