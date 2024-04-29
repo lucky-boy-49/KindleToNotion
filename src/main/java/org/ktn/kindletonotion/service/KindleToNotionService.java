@@ -4,9 +4,13 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.ktn.kindletonotion.kindle.model.Book;
 import org.ktn.kindletonotion.kindle.model.Mark;
 import org.ktn.kindletonotion.model.NotionReact;
+import org.ktn.kindletonotion.model.ReactEnum;
 import org.ktn.kindletonotion.model.notion.block.type.*;
 import org.ktn.kindletonotion.model.notion.page.Page;
 import org.ktn.kindletonotion.model.notion.page.Properties;
+import org.ktn.kindletonotion.model.result.Result;
+import org.ktn.kindletonotion.model.result.Same;
+import org.ktn.kindletonotion.model.result.Success;
 import org.ktn.kindletonotion.notion.NotionClient;
 import org.ktn.kindletonotion.notion.model.Block;
 import org.ktn.kindletonotion.notion.model.page.PageData;
@@ -55,7 +59,7 @@ public class KindleToNotionService {
      * @param pageMap 页面数据Map
      * @param databaseId 数据库id
      */
-    public void uploadBookNote(String bookName, Book book, Map<String, PageData> pageMap, String databaseId) {
+    public NotionReact<String> uploadBookNote(String bookName, Book book, Map<String, PageData> pageMap, String databaseId) {
 
         if (pageMap.containsKey(bookName)) {
             // notion中存在
@@ -67,14 +71,15 @@ public class KindleToNotionService {
             int markNum = pageData.getProperties().get("笔记数").get("number").asInt();
             // 如果kindle中的笔记数量与notion中的笔记数量一致则不进行更新
             if (markNum == book.getNums()) {
-                return;
+                return  new NotionReact<>(ReactEnum.NUMBER_NOTES_IS_SAME.getCode(),
+                        book.getName() + "_" + book.getAuthor() + ReactEnum.NUMBER_NOTES_IS_SAME.getMessage(), null);
             }
             // 计算notion的页大小，笔记数*4
             int notionPageSize = markNum * 4;
             // 获取页的所有子项
             NotionReact<Object> queriedBlocksRes = notionClient.block.queryBlocks(pageId, notionPageSize);
             if (queriedBlocksRes.code() != HttpStatus.OK.value()) {
-                return;
+                return new  NotionReact<>(ReactEnum.FAILURE.getCode(), queriedBlocksRes.message(), null);
             }
             // 获取页的所有子项
             List<Block> blocks = new LinkedList<>();
@@ -87,14 +92,15 @@ public class KindleToNotionService {
                 }
             }
             // 上传
-            upload(book, blocks, notionPageSize, pageData);
+            NotionReact<String> upload = upload(book, blocks, notionPageSize, pageData);
+            return getNotionReact(book, upload);
 
         } else {
             // notion中不存在当前图书
             // 1.创建页面
             NotionReact<String> createdPageRes = createPage(book, databaseId);
             if (createdPageRes.code() != HttpStatus.OK.value()) {
-                return;
+                return  new  NotionReact<>(ReactEnum.FAILURE.getCode(), createdPageRes.message(), createdPageRes.data());
             }
             // 获取页面id
             String pageId = createdPageRes.data();
@@ -107,7 +113,7 @@ public class KindleToNotionService {
                     lastMarkTime = lastMarkTime.isBefore(mark.getTime()) ?  mark.getTime() : lastMarkTime;
                     NotionReact<String> appendBlockRes = appendBlock(pageId, mark);
                     if (appendBlockRes.code() != HttpStatus.OK.value()) {
-                        return;
+                        return  appendBlockRes;
                     }
                 }
 
@@ -117,11 +123,25 @@ public class KindleToNotionService {
             String requestBody = JsonUtil.toJson(properties);
             // 发送更新请求
             NotionReact<String> updatePagePropertiesRes = notionClient.page.updatePageProperties(pageId, requestBody);
-            if (updatePagePropertiesRes.code() != HttpStatus.OK.value()) {
-                return;
-            }
+            return getNotionReact(book, updatePagePropertiesRes);
         }
 
+    }
+
+    /**
+     * 返回书的上传结果
+     * @param book 书信息
+     * @param updatePagePropertiesRes 更新页面属性结果
+     * @return 上传结果
+     */
+    private NotionReact<String> getNotionReact(Book book, NotionReact<String> updatePagePropertiesRes) {
+        if (updatePagePropertiesRes.code() != HttpStatus.OK.value()) {
+            return  new  NotionReact<>(ReactEnum.FAILURE.getCode(), updatePagePropertiesRes.message(),
+                    updatePagePropertiesRes.data());
+        } else {
+            return new NotionReact<>(ReactEnum.SUCCESS.getCode(),
+                    book.getName() + "_" + book.getAuthor() + ReactEnum.SUCCESS.getMessage(), null);
+        }
     }
 
     /**
@@ -306,5 +326,19 @@ public class KindleToNotionService {
         return children;
     }
 
+    public Result toResult (List<String> successList, List<String> sameList) {
+        Result result = new Result();
+        List<Success> success = new LinkedList<>();
+        for (String s : successList) {
+            success.add(new Success(s, "上传成功"));
+        }
+        result.setSuccess(success);
+        List<Same> same = new LinkedList<>();
+        for (String s : sameList) {
+            same.add(new Same(s, "笔记数一致，不进行更新"));
+        }
+        result.setSames(same);
+        return result;
+    }
 
 }

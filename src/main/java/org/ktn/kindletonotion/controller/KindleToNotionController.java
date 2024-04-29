@@ -4,6 +4,7 @@ import org.ktn.kindletonotion.kindle.KindleClient;
 import org.ktn.kindletonotion.kindle.model.Book;
 import org.ktn.kindletonotion.model.NotionReact;
 import org.ktn.kindletonotion.model.React;
+import org.ktn.kindletonotion.model.ReactEnum;
 import org.ktn.kindletonotion.notion.NotionClient;
 import org.ktn.kindletonotion.notion.config.NotionConfigProperties;
 import org.ktn.kindletonotion.notion.model.page.PageData;
@@ -84,10 +85,29 @@ public class KindleToNotionController {
         // 把书信息转换为Map，Key-书名+作者，value-书信息
         Map<String, PageData> pageMap = kindleToNotionService.pagesToMap(pageDataList);
 
-        // 处理书籍进行上传
-        books.forEach((bookName, book) -> kindleToNotionService.uploadBookNote(bookName, book, pageMap, notionConfigProperties.databaseId()));
+        log.info("共有{}本书需要上传", books.size());
+        // 记录结果
+        List<String> successList = new ArrayList<>();
+        List<String> sameList = new ArrayList<>();
 
-        return new React(HttpStatus.OK.value(), "上传成功", null);
+        // 处理书籍进行上传
+        for (Map.Entry<String, Book> entry : books.entrySet()) {
+            String bookName = entry.getKey();
+            Book book = entry.getValue();
+            NotionReact<String> uploaded = kindleToNotionService.uploadBookNote(bookName, book, pageMap, notionConfigProperties.databaseId());
+            if (uploaded.code() == ReactEnum.FAILURE.getCode()) {
+                // 上传失败，直接返回
+                return new React(uploaded.code(), uploaded.message(), uploaded.data());
+            } else if (uploaded.code() == ReactEnum.NUMBER_NOTES_IS_SAME.getCode()) {
+                 sameList.add(bookName);
+            } else if (uploaded.code() == ReactEnum.SUCCESS.getCode()) {
+                 successList.add(bookName);
+            }
+        }
+        log.info("上传成功的书籍有：{}", successList);
+        log.info("笔记数量相同的书籍有：{}", sameList);
+
+        return new React(HttpStatus.OK.value(), "上传成功", kindleToNotionService.toResult(successList, sameList));
     }
 
 }
