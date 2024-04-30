@@ -28,7 +28,6 @@ public interface BlockService {
      * 查询页面下的所有块
      * @param pageId 页面Id
      * @param pageSize 每页大小
-     * @param headers 请求头
      * @return 块数据
      */
     @GetExchange(value = "/v1/blocks/{pageId}/children?page_size={pageSize}")
@@ -38,7 +37,6 @@ public interface BlockService {
      * 向页面追加块
      * @param pageId 页面Id
      * @param requestBody 块数据
-     * @param headers 请求头
      * @return 追加结果
      */
     @PatchExchange(value = "/v1/blocks/{pageId}/children", contentType = MediaType.APPLICATION_JSON_VALUE)
@@ -47,9 +45,18 @@ public interface BlockService {
     /**
      * 删除块
      * @param blockId 块Id
-     * @param headers 请求头
      * @return 删除结果
      */
     @DeleteExchange(value = "/v1/blocks/{blockId}")
     ResponseEntity<String> deleteBlock(@PathVariable String blockId);
+
+    /**
+     * 分页查询块
+     * @param pageId 页面Id
+     * @param pageSize 每页大小
+     * @param nextCursor 下一页游标
+     * @return 块数据
+     */
+    @GetExchange(value = "/v1/blocks/{pageId}/children?page_size={pageSize}&start_cursor={nextCursor}")
+    ResponseEntity<PageContent> queryBlocksPagination(@PathVariable String pageId, @PathVariable int pageSize, @PathVariable String nextCursor);
 }

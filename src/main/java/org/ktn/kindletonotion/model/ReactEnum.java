@@ -1,9 +1,12 @@
 package org.ktn.kindletonotion.model;
 
+import lombok.Getter;
+
 /**
  * 结果枚举
  * @author jiahe
  */
+@Getter
 public enum ReactEnum {
 
 
@@ -19,11 +22,4 @@ public enum ReactEnum {
         this.message = message;
     }
 
-    public int getCode() {
-        return code;
-    }
-
-    public String getMessage() {
-        return message;
-    }
 }

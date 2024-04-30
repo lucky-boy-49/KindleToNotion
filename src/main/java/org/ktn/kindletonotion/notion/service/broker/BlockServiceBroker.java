@@ -61,7 +61,7 @@ public class BlockServiceBroker {
             ResponseEntity<PageContent> response = service.queryBlocks(pageId, pageSize);
             log.info("查询Notion页数据成功");
             return new NotionReact<>(response.getStatusCode().value(), "查询Notion页数据成功",
-                    Objects.requireNonNull(response.getBody()).getBlockList());
+                    Objects.requireNonNull(response.getBody()));
         } catch (NotionResponseException e) {
             log.error("查询Notion页数据失败，错误码：{}，错误信息：{}", e.getCode(), e.getMessage());
             return new NotionReact<>(e.getCode(), "查询Notion页数据失败", e.getMessage());
@@ -69,6 +69,30 @@ public class BlockServiceBroker {
             log.error("查询Notion页数据失败：{}", e.getMessage());
             return new NotionReact<>(HttpStatus.INTERNAL_SERVER_ERROR.value(),
                     "查询Notion页数据失败", e.getMessage());
+        }
+    }
+
+    /**
+     * 分页获取某个页面下BLock
+     * @param pageId 页id
+     * @param pageSize 页大小
+     * @return 子项数据
+     */
+    public NotionReact<Object> queryBlocksPagination(String pageId, int pageSize, String nextCursor) {
+        try {
+            log.info("分页查询Notion页数据");
+            BlockService service = factory.createClient(BlockService.class);
+            ResponseEntity<PageContent> response = service.queryBlocksPagination(pageId, pageSize, nextCursor);
+            log.info("分页查询Notion页数据成功");
+            return new NotionReact<>(response.getStatusCode().value(), "分页查询Notion页数据成功",
+                    Objects.requireNonNull(response.getBody()));
+        } catch (NotionResponseException e) {
+            log.error("分页查询Notion页数据失败，错误码：{}，错误信息：{}", e.getCode(), e.getMessage());
+            return new NotionReact<>(e.getCode(), "分页查询Notion页数据失败", e.getMessage());
+        } catch (Exception e) {
+            log.error("分页查询Notion页数据失败：{}", e.getMessage());
+            return new NotionReact<>(HttpStatus.INTERNAL_SERVER_ERROR.value(),
+                    "分页查询Notion页数据失败", e.getMessage());
         }
     }
 

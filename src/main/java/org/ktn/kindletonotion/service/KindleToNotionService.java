@@ -13,6 +13,7 @@ import org.ktn.kindletonotion.model.result.Same;
 import org.ktn.kindletonotion.model.result.Success;
 import org.ktn.kindletonotion.notion.NotionClient;
 import org.ktn.kindletonotion.notion.model.Block;
+import org.ktn.kindletonotion.notion.model.page.PageContent;
 import org.ktn.kindletonotion.notion.model.page.PageData;
 import org.ktn.kindletonotion.notion.model.page.PageProperties;
 import org.ktn.kindletonotion.notion.utils.JsonUtil;
@@ -76,24 +77,13 @@ public class KindleToNotionService {
             }
             // 计算notion的页大小，笔记数*4
             int notionPageSize = markNum * 4;
-            // 获取页的所有子项
-            NotionReact<Object> queriedBlocksRes = notionClient.block.queryBlocks(pageId, notionPageSize);
-            if (queriedBlocksRes.code() != HttpStatus.OK.value()) {
-                return new  NotionReact<>(ReactEnum.FAILURE.getCode(), queriedBlocksRes.message(), null);
+            if (notionPageSize > 100) {
+                // 分段进行更新
+                return segmentedUpdate(book, pageId, pageData);
+            } else {
+                // 一次性更新
+                return oneUpdate(book, pageId, notionPageSize, pageData);
             }
-            // 获取页的所有子项
-            List<Block> blocks = new LinkedList<>();
-            Object data = queriedBlocksRes.data();
-            if (data instanceof List<?> blockList) {
-                for (Object block : blockList) {
-                    if (block instanceof Block) {
-                        blocks.add((Block) block);
-                    }
-                }
-            }
-            // 上传
-            NotionReact<String> upload = upload(book, blocks, notionPageSize, pageData);
-            return getNotionReact(book, upload);
 
         } else {
             // notion中不存在当前图书
@@ -126,6 +116,224 @@ public class KindleToNotionService {
             return getNotionReact(book, updatePagePropertiesRes);
         }
 
+    }
+
+    /**
+     * 分段更新
+     * @param book 书信息
+     * @param pageId 页面id
+     * @param pageData 页面数据
+     * @return 更新结果
+     */
+    private NotionReact<String> segmentedUpdate(Book book, String pageId, PageData pageData) {
+        // 最后标记时间
+        LocalDateTime lastMarkTime = LocalDateTime.of(1900, 1, 1, 0, 0, 0);
+        int maxSize = 23;
+        int i = 0;
+        int nums = book.getNums();
+        List<Mark> marks = book.getMarks();
+        String nextCursor = "";
+        boolean hasMore = true;
+        // 遍历所有标注进行上传
+        label:
+        while (hasMore) {
+            int j = 0;
+            // 获取23*4个Block
+            NotionReact<Object> queriedBlocksRes;
+            if (nextCursor.isEmpty()) {
+                queriedBlocksRes = notionClient.block.queryBlocks(pageId, maxSize * 4);
+            } else {
+                 queriedBlocksRes = notionClient.block.queryBlocksPagination(pageId, maxSize * 4, nextCursor);
+            }
+            if (queriedBlocksRes.code() != HttpStatus.OK.value()) {
+                 return new NotionReact<>(ReactEnum.FAILURE.getCode(), queriedBlocksRes.message(), null);
+            }
+            // 获取页的所有子项
+            List<Block> blocks = new LinkedList<>();
+            if (queriedBlocksRes.data() instanceof PageContent content) {
+                hasMore = content.getHasMore();
+                nextCursor = content.getNextCursor();
+                getBlocks(content, blocks);
+            }
+
+            int k = i + maxSize;
+            for (; i < Math.min(k, nums); i++) {
+
+                if (j == blocks.size()) {
+                    break label;
+                }
+
+                // 获取标注
+                Mark mark = marks.get(i);
+                lastMarkTime = lastMarkTime.isBefore(mark.getTime()) ?  mark.getTime() : lastMarkTime;
+                // 更新笔记
+                NotionReact<String> updatedBlockRes = uploadBlock(mark,  blocks, j);
+                if (updatedBlockRes.code() != HttpStatus.OK.value()) {
+                    return updatedBlockRes;
+                }
+                j += 4;
+            }
+            // 已经全部更新完成，把多余的block删除
+            if (i == nums && j != blocks.size()) {
+                for (; j < blocks.size(); j++) {
+                    String blockId = blocks.get(j).getId();
+                    NotionReact<String> deleteBlockRes = notionClient.block.deleteBlock(blockId);
+                    if (deleteBlockRes.code() != HttpStatus.OK.value()) {
+                        return deleteBlockRes;
+                    }
+                }
+                break;
+            }
+        }
+        // 如果笔记多余Block则进行追加
+        if (i < nums) {
+            for (; i < nums; i++) {
+                // 获取标注
+                Mark mark = marks.get(i);
+                lastMarkTime = lastMarkTime.isBefore(mark.getTime()) ?  mark.getTime() : lastMarkTime;
+                NotionReact<String> appendBlockRes = appendBlock(pageData.getId(), mark);
+                if (appendBlockRes.code() != HttpStatus.OK.value()) {
+                    return appendBlockRes;
+                }
+            }
+        }
+        // 如果笔记上传完成还有Block则进行删除
+        if (hasMore) {
+            while (hasMore) {
+                // 获取页的所有子项
+                NotionReact<Object> queriedBlocks = notionClient.block.
+                        queryBlocksPagination(pageId, 100, nextCursor);
+                // 获取页的所有子项
+                List<Block> blocks = new LinkedList<>();
+                if (queriedBlocks.data() instanceof PageContent content) {
+                    hasMore = content.getHasMore();
+                    nextCursor = content.getNextCursor();
+                    getBlocks(content, blocks);
+                } else {
+                    break;
+                }
+                for (Block block : blocks) {
+                    String blockId = block.getId();
+                    NotionReact<String> deleteBlockRes = notionClient.block.deleteBlock(blockId);
+                    if (deleteBlockRes.code() != HttpStatus.OK.value()) {
+                        return deleteBlockRes;
+                    }
+                }
+            }
+        }
+        // 更新页面属性
+        NotionReact<String> updatePagePropertiesRes = updatePageProperties(book, pageData, lastMarkTime);
+        if (updatePagePropertiesRes.code() != HttpStatus.OK.value()) {
+            return updatePagePropertiesRes;
+        }
+
+        return new  NotionReact<>(ReactEnum.SUCCESS.getCode(), book.getName() + "_" + book.getAuthor() + "上传成功", null);
+    }
+
+    /**
+     * 获取页面Block数据
+     * @param content 页面内容
+     * @param blocks 页面块数据
+     */
+    private static void getBlocks(PageContent content, List<Block> blocks) {
+        Object data = content.getBlockList();
+        if (data instanceof List<?> blockList) {
+            for (Object block : blockList) {
+                if (block instanceof Block) {
+                    blocks.add((Block) block);
+                }
+            }
+        }
+    }
+
+    /**
+     * 更新积木
+     * @param mark 笔记
+     * @param blocks 页面块数据
+     * @param j 当前notion Block的下标
+     * @return 更新结果
+     */
+    private NotionReact<String> uploadBlock(Mark mark, List<Block> blocks, int j) {
+        // 获取积木id
+        String blockId = blocks.get(j++).getId();
+        // 更新callout请求体
+        Callout callout = new Callout(mark.getContent());
+        // 更新callout请求体
+        NotionReact<String> updatedBlockRes = toUpload(callout, blockId);
+        if (updatedBlockRes.code() != HttpStatus.OK.value()) {
+            return updatedBlockRes;
+        }
+
+        // 获取积木id
+        blockId = blocks.get(j++).getId();
+        // 更新quote请求体
+        Quote quote = new Quote(mark.getHaveNote() ? mark.getNote() : "无");
+        // 更新quote请求体
+        updatedBlockRes = toUpload(quote, blockId);
+        if (updatedBlockRes.code() != HttpStatus.OK.value()) {
+            return updatedBlockRes;
+        }
+
+        // 获取积木id
+        blockId = blocks.get(j++).getId();
+        // 更新paragraph请求体
+        Paragraph paragraph = new Paragraph(mark.getAddress());
+        // 更新paragraph请求体
+        updatedBlockRes = toUpload(paragraph, blockId);
+        if (updatedBlockRes.code() != HttpStatus.OK.value()) {
+            return updatedBlockRes;
+        }
+
+        // 获取积木id
+        blockId = blocks.get(j).getId();
+        // 更新divider请求体
+        Divider divider = new Divider();
+        // 更新divider请求体
+        updatedBlockRes = toUpload(divider, blockId);
+        if (updatedBlockRes.code() != HttpStatus.OK.value()) {
+            return updatedBlockRes;
+        }
+        return new  NotionReact<>(HttpStatus.OK.value(), "更新成功", null);
+    }
+
+    /**
+     * 更新页面属性
+     * @param book 书信息
+     * @param pageData 页面数据
+     * @param lastMarkTime 最后标记时间
+     * @return 更新结果
+     */
+    private NotionReact<String> updatePageProperties(Book book, PageData pageData, LocalDateTime lastMarkTime) {
+        // 更新页面属性
+        PageProperties properties = new PageProperties(book.getNums(), lastMarkTime.toString());
+        String requestBody = JsonUtil.toJson(properties);
+        // 发送更新请求
+        return notionClient.page.updatePageProperties(pageData.getId(), requestBody);
+    }
+
+    /**
+     * 一次性更新
+     * @param book 书信息
+     * @param pageId 页面id
+     * @param notionPageSize 页面大小
+     * @param pageData 页面数据
+     * @return 更新结果
+     */
+    private NotionReact<String> oneUpdate(Book book, String pageId, int notionPageSize, PageData pageData) {
+        // 获取页的所有子项
+        NotionReact<Object> queriedBlocksRes = notionClient.block.queryBlocks(pageId, notionPageSize);
+        if (queriedBlocksRes.code() != HttpStatus.OK.value()) {
+            return new NotionReact<>(ReactEnum.FAILURE.getCode(), queriedBlocksRes.message(), null);
+        }
+        // 获取页的所有子项
+        List<Block> blocks = new LinkedList<>();
+        if (queriedBlocksRes.data() instanceof PageContent content) {
+            getBlocks(content, blocks);
+        }
+
+        // 上传
+        NotionReact<String> upload = upload(book, blocks, notionPageSize, pageData, book.getNums());
+        return getNotionReact(book, upload);
     }
 
     /**
@@ -182,17 +390,17 @@ public class KindleToNotionService {
      * @param blocks 页面块数据
      * @param notionPageSize 页面大小
      * @param pageData 页面数据
+     * @param totalNum 总笔记数
+     * @return 上传结果
      */
-    private NotionReact<String> upload(Book book, List<Block> blocks, int notionPageSize, PageData pageData) {
+    private NotionReact<String> upload(Book book, List<Block> blocks, int notionPageSize, PageData pageData, int totalNum) {
         // 最后标记时间
         LocalDateTime lastMarkTime = LocalDateTime.of(1900, 1, 1, 0, 0, 0);
 
-        // 标注总数
-        Integer totalNum = book.getNums();
         // 获取所有标注
         List<Mark> marks = book.getMarks();
-        // i:当前已遍历的标注数,j:当前notion子项的下标
-        int i = 1, j = 0;
+        // j:当前notion子项的下标
+        int j = 0, i = 1;
         // 遍历所有标注进行上传
         for (; i < totalNum + 1; i++) {
             // 获取标注
@@ -202,47 +410,11 @@ public class KindleToNotionService {
             // 当前的标注未超出notion页已有的笔记数，即（i-1）*4<=notionPageSize
             if ((i - 1) * 4 <= notionPageSize) {
                 // 更新笔记
-
-                // 获取积木id
-                String blockId = blocks.get(j++).getId();
-                // 更新callout请求体
-                Callout callout = new Callout(mark.getContent());
-                // 更新callout请求体
-                NotionReact<String> updatedBlockRes = toUpload(callout, blockId);
-                if (updatedBlockRes != null) {
+                NotionReact<String> updatedBlockRes = uploadBlock(mark, blocks, j);
+                if (updatedBlockRes.code() != HttpStatus.OK.value()) {
                     return updatedBlockRes;
                 }
-
-                // 获取积木id
-                blockId = blocks.get(j++).getId();
-                // 更新quote请求体
-                Quote quote = new Quote(mark.getHaveNote() ? mark.getNote() : "无");
-                // 更新quote请求体
-                updatedBlockRes = toUpload(quote, blockId);
-                if (updatedBlockRes != null) {
-                    return updatedBlockRes;
-                }
-
-                // 获取积木id
-                blockId = blocks.get(j++).getId();
-                // 更新paragraph请求体
-                Paragraph paragraph = new Paragraph(mark.getAddress());
-                // 更新paragraph请求体
-                updatedBlockRes = toUpload(paragraph, blockId);
-                if (updatedBlockRes != null) {
-                    return updatedBlockRes;
-                }
-
-                // 获取积木id
-                blockId = blocks.get(j++).getId();
-                // 更新divider请求体
-                Divider divider = new Divider();
-                // 更新divider请求体
-                updatedBlockRes = toUpload(divider, blockId);
-                if (updatedBlockRes != null) {
-                    return updatedBlockRes;
-                }
-                
+                j += 4;
             } else if ((i - 1) * 4 > notionPageSize) {
                 // 如果笔记数大于当前notion笔记则进行追加笔记
                 NotionReact<String> appendBlockRes = appendBlock(pageData.getId(), mark);
@@ -261,11 +433,7 @@ public class KindleToNotionService {
                 }
             }
         }
-        // 更新页面属性
-        PageProperties properties = new PageProperties(book.getNums(), lastMarkTime.toString());
-        String requestBody = JsonUtil.toJson(properties);
-        // 发送更新请求
-        NotionReact<String> updatePagePropertiesRes = notionClient.page.updatePageProperties(pageData.getId(), requestBody);
+        NotionReact<String> updatePagePropertiesRes = updatePageProperties(book, pageData, lastMarkTime);
         if (updatePagePropertiesRes.code() != HttpStatus.OK.value()) {
             return updatePagePropertiesRes;
         }
@@ -286,7 +454,7 @@ public class KindleToNotionService {
         if (updatedBlockRes.code() != HttpStatus.OK.value()) {
             return new NotionReact<>(updatedBlockRes.code(), updatedBlockRes.message(), updatedBlockRes.data());
         }
-        return null;
+        return new  NotionReact<>(HttpStatus.OK.value(), "更新成功", null);
     }
 
     /**
