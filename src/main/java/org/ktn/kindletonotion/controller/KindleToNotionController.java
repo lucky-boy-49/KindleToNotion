@@ -1,16 +1,16 @@
 package org.ktn.kindletonotion.controller;
 
+import lombok.extern.slf4j.Slf4j;
 import org.ktn.kindletonotion.kindle.KindleClient;
 import org.ktn.kindletonotion.kindle.model.Book;
 import org.ktn.kindletonotion.model.NotionReact;
 import org.ktn.kindletonotion.model.React;
 import org.ktn.kindletonotion.model.ReactEnum;
+import org.ktn.kindletonotion.model.Schedule;
 import org.ktn.kindletonotion.notion.NotionClient;
 import org.ktn.kindletonotion.notion.config.NotionConfigProperties;
 import org.ktn.kindletonotion.notion.model.page.PageData;
 import org.ktn.kindletonotion.service.KindleToNotionService;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -24,11 +24,11 @@ import java.util.Map;
  * Kindle上传Notion控制器
  * @author 贺佳
  */
+@Slf4j
 @RestController
 @RequestMapping("kindleToNotion")
 public class KindleToNotionController {
 
-    private static final Logger log = LoggerFactory.getLogger(KindleToNotionController.class);
     private final NotionClient notionClient;
 
     private final KindleClient kindleClient;
@@ -37,11 +37,14 @@ public class KindleToNotionController {
 
     private final KindleToNotionService kindleToNotionService;
 
-    public KindleToNotionController(NotionClient notionClient, KindleClient kindleClient, NotionConfigProperties notionConfigProperties, KindleToNotionService kindleToNotionService) {
+    private final Schedule schedule;
+
+    public KindleToNotionController(NotionClient notionClient, KindleClient kindleClient, NotionConfigProperties notionConfigProperties, KindleToNotionService kindleToNotionService, Schedule schedule) {
         this.notionClient = notionClient;
         this.kindleClient = kindleClient;
         this.notionConfigProperties = notionConfigProperties;
         this.kindleToNotionService = kindleToNotionService;
+        this.schedule = schedule;
     }
 
 
@@ -91,6 +94,7 @@ public class KindleToNotionController {
         List<String> sameList = new ArrayList<>();
 
         // 处理书籍进行上传
+        double i = 0;
         for (Map.Entry<String, Book> entry : books.entrySet()) {
             String bookName = entry.getKey();
             Book book = entry.getValue();
@@ -103,11 +107,21 @@ public class KindleToNotionController {
             } else if (uploaded.code() == ReactEnum.SUCCESS.getCode()) {
                  successList.add(bookName);
             }
+            // 设置进度
+            i++;
+            schedule.setNum(i / books.size());
+            schedule.setDate(bookName + "上传成功");
         }
         log.info("上传成功的书籍有：{}", successList);
         log.info("笔记数量相同的书籍有：{}", sameList);
 
         return new React(HttpStatus.OK.value(), "上传成功", kindleToNotionService.toResult(successList, sameList));
+    }
+
+    @GetMapping("/schedule")
+    public React schedule() {
+        log.info("定时任务：{}", schedule);
+        return new React(HttpStatus.OK.value(), "定时任务", schedule);
     }
 
 }

@@ -3,10 +3,12 @@ package org.ktn.kindletonotion.config;
 import io.netty.channel.ChannelOption;
 import lombok.extern.slf4j.Slf4j;
 import org.ktn.kindletonotion.Exception.NotionResponseException;
+import org.ktn.kindletonotion.model.Schedule;
 import org.ktn.kindletonotion.notion.config.NotionConfigProperties;
 import org.ktn.kindletonotion.notion.utils.HttpHeaderUtil;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Scope;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.http.client.ReactorResourceFactory;
 import org.springframework.http.client.reactive.ClientHttpConnector;
@@ -18,6 +20,8 @@ import reactor.netty.http.client.HttpClient;
 
 import java.time.Duration;
 import java.util.function.Function;
+
+import static org.springframework.web.util.TagUtils.SCOPE_APPLICATION;
 
 /**
  * 配置
@@ -74,6 +78,12 @@ public class KindToNotionConfig {
                 })
                 .build();
         return HttpServiceProxyFactory.builderFor(WebClientAdapter.create(client)).build();
+    }
+
+    @Bean
+    @Scope(SCOPE_APPLICATION)
+    public Schedule getSchedule() {
+        return new Schedule();
     }
 
 }
