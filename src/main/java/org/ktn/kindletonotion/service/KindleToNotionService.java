@@ -1,6 +1,7 @@
 package org.ktn.kindletonotion.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import lombok.RequiredArgsConstructor;
 import org.ktn.kindletonotion.kindle.model.Book;
 import org.ktn.kindletonotion.kindle.model.Mark;
 import org.ktn.kindletonotion.model.NotionReact;
@@ -8,10 +9,12 @@ import org.ktn.kindletonotion.model.ReactEnum;
 import org.ktn.kindletonotion.model.notion.block.type.*;
 import org.ktn.kindletonotion.model.notion.page.Page;
 import org.ktn.kindletonotion.model.notion.page.Properties;
+import org.ktn.kindletonotion.model.result.Deploy;
 import org.ktn.kindletonotion.model.result.Result;
 import org.ktn.kindletonotion.model.result.Same;
 import org.ktn.kindletonotion.model.result.Success;
 import org.ktn.kindletonotion.notion.NotionClient;
+import org.ktn.kindletonotion.notion.config.NotionConfigProperties;
 import org.ktn.kindletonotion.notion.model.Block;
 import org.ktn.kindletonotion.notion.model.page.PageContent;
 import org.ktn.kindletonotion.notion.model.page.PageData;
@@ -35,13 +38,12 @@ import java.util.Objects;
  * @author 贺佳
  */
 @Service
+@RequiredArgsConstructor
 public class KindleToNotionService {
 
     private final NotionClient notionClient;
 
-    public KindleToNotionService(NotionClient notionClient) {
-        this.notionClient = notionClient;
-    }
+    private final NotionConfigProperties notionConfigProperties;
 
     /**
      * 把数据库页下面的页转化为Map
@@ -507,6 +509,17 @@ public class KindleToNotionService {
         }
         result.setSames(same);
         return result;
+    }
+
+    public void setDeploy(Deploy deploy) {
+        if (StringUtils.hasLength(deploy.databaseId()) && StringUtils.hasLength(deploy.authToken())) {
+            // 设置数据库id
+            notionConfigProperties.setDatabaseId(deploy.databaseId());
+            // 设置token
+            notionConfigProperties.setAuthToken(deploy.authToken());
+            // 保存配置
+            notionConfigProperties.save(deploy);
+        }
     }
 
 }

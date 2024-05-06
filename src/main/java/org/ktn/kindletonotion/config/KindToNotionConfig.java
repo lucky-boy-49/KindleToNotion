@@ -68,7 +68,7 @@ public class KindToNotionConfig {
 
         WebClient client = WebClient.builder()
                 // 设置请求地址
-                .baseUrl(notionConfigProps.apiUrl())
+                .baseUrl(notionConfigProps.getApiUrl())
                 // 设置默认请求头
                 .defaultHeaders(httpHeaders -> httpHeaders.addAll(httpHeaderUtil.getDefaultHeaders()))
                 .clientConnector(connector)

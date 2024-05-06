@@ -29,7 +29,7 @@
             </div>
             <div class="d-none mb-3" id="error">
                 <label for="errorText" class="form-label">错误信息</label>
-                <input class="form-control" type="text" id="errorText">
+                <input class="form-control" type="text" aria-label="readonly input example" id="errorText" readonly>
             </div>
         </div>
         <div class="col-sm">
@@ -99,10 +99,10 @@
         $("#error").addClass("d-none");
         // 显示进度条元素
         $("#progress").removeClass("d-none");
-        // 上传请求
-        update();
         // 进度条请求
         interval = setInterval(setProgress, 500);
+        // 上传请求
+        update();
     }
 
     function updateTable(result) {
@@ -149,8 +149,20 @@
                 authToken: authToken
             },
             success: function (result) {
+                let progress = $("#progress");
+                if (result.responseCode === 1) {
+                    // 隐藏进度条元素
+                    progress.addClass("d-none");
+                    // 显示错误元素
+                    $("#error").removeClass("d-none");
+                    // 显示错误信息
+                    $("#errorText").val(result.responseMassage);
+                    // 停止定时
+                    clearInterval(interval);
+                    return;
+                }
                 // 隐藏进度条元素
-                $("#progress").addClass("d-none");
+                progress.addClass("d-none");
                 // 更新表格
                 updateTable(result);
             },
@@ -160,7 +172,9 @@
                 // 显示错误元素
                 $("#error").removeClass("d-none");
                 // 显示错误信息
-                $("#errorText").val(result.responseMassage);
+                $("#errorText").val(result.data.responseMassage);
+                // 停止定时
+                clearInterval(interval);
             }
         });
     }

@@ -8,14 +8,14 @@ import org.ktn.kindletonotion.model.NotionReact;
 import org.ktn.kindletonotion.model.React;
 import org.ktn.kindletonotion.model.ReactEnum;
 import org.ktn.kindletonotion.model.Schedule;
+import org.ktn.kindletonotion.model.result.Deploy;
 import org.ktn.kindletonotion.notion.NotionClient;
 import org.ktn.kindletonotion.notion.config.NotionConfigProperties;
 import org.ktn.kindletonotion.notion.model.page.PageData;
 import org.ktn.kindletonotion.service.KindleToNotionService;
 import org.springframework.http.HttpStatus;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.util.StringUtils;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -47,19 +47,28 @@ public class KindleToNotionController {
      * @return 上传结果
      */
     @GetMapping("/conversions")
-    public React conversions() {
+    public React conversions(@RequestParam String databaseId, @RequestParam String authToken) {
+
+        if ((!StringUtils.hasLength(databaseId) || !StringUtils.hasLength(authToken))
+                && (!StringUtils.hasLength(notionConfigProperties.getDatabaseId()) ||
+                !StringUtils.hasLength(notionConfigProperties.getAuthToken()))) {
+            return new React(ReactEnum.FAILURE.getCode(), "第一次请传入配置信息！！！", null);
+        }
+
+        // 配置处理
+        kindleToNotionService.setDeploy(new Deploy(databaseId, authToken));
 
         // 读取所有笔记文件
         String filePath = kindleClient.kindle.getFilePath();
         if (filePath.isEmpty()) {
-            return new React(HttpStatus.NOT_FOUND.value(), "无法找到文件，请手动选择！！！！", null);
+            return new React(ReactEnum.FAILURE.getCode(), "无法找到文件", null);
         }
         // 处理文件，并获取文件Map对象
         Map<String, Book> books = kindleClient.kindle.parseNotes(filePath);
 
         // 查询所有读书笔记下面的所有书信息
         List<PageData> pageDataList = new ArrayList<>();
-        NotionReact<Object> queryPagesRes = notionClient.database.queryPages(notionConfigProperties.databaseId());
+        NotionReact<Object> queryPagesRes = notionClient.database.queryPages(notionConfigProperties.getDatabaseId());
         if (HttpStatus.OK.value() == queryPagesRes.code()) {
             Object data = queryPagesRes.data();
             if (data instanceof List<?>) {
@@ -92,7 +101,7 @@ public class KindleToNotionController {
         for (Map.Entry<String, Book> entry : books.entrySet()) {
             String bookName = entry.getKey();
             Book book = entry.getValue();
-            NotionReact<String> uploaded = kindleToNotionService.uploadBookNote(bookName, book, pageMap, notionConfigProperties.databaseId());
+            NotionReact<String> uploaded = kindleToNotionService.uploadBookNote(bookName, book, pageMap, notionConfigProperties.getDatabaseId());
             if (uploaded.code() == ReactEnum.FAILURE.getCode()) {
                 // 上传失败，直接返回
                 return new React(uploaded.code(), uploaded.message(), uploaded.data());
