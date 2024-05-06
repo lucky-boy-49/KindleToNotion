@@ -44,3 +44,4 @@ gradlew.bat
 /src/main/resources/My Clippings.txt
 /src/main/resources/*.azw3
 /src/main/resources/*.kfx
+/src/main/resources/rebel.xml
