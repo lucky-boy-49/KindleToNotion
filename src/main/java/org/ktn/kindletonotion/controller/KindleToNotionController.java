@@ -1,5 +1,6 @@
 package org.ktn.kindletonotion.controller;
 
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.ktn.kindletonotion.kindle.KindleClient;
 import org.ktn.kindletonotion.kindle.model.Book;
@@ -26,6 +27,7 @@ import java.util.Map;
  */
 @Slf4j
 @RestController
+@RequiredArgsConstructor
 @RequestMapping("kindleToNotion")
 public class KindleToNotionController {
 
@@ -38,14 +40,6 @@ public class KindleToNotionController {
     private final KindleToNotionService kindleToNotionService;
 
     private final Schedule schedule;
-
-    public KindleToNotionController(NotionClient notionClient, KindleClient kindleClient, NotionConfigProperties notionConfigProperties, KindleToNotionService kindleToNotionService, Schedule schedule) {
-        this.notionClient = notionClient;
-        this.kindleClient = kindleClient;
-        this.notionConfigProperties = notionConfigProperties;
-        this.kindleToNotionService = kindleToNotionService;
-        this.schedule = schedule;
-    }
 
 
     /**
@@ -118,6 +112,10 @@ public class KindleToNotionController {
         return new React(HttpStatus.OK.value(), "上传成功", kindleToNotionService.toResult(successList, sameList));
     }
 
+    /**
+     * 获取定时任务信息
+     * @return 定时任务信息
+     */
     @GetMapping("/schedule")
     public React schedule() {
         log.info("定时任务：{}", schedule);
