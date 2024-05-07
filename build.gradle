@@ -38,3 +38,17 @@ dependencies {
 tasks.named('test') {
     useJUnitPlatform()
 }
+
+bootJar {
+    manifestContentCharset 'utf-8'
+    metadataCharset 'utf-8'
+    archivesBaseName = 'KindleToNotion' // jar包名
+    manifest {
+        attributes "Manifest-Version": 1.0,
+                //  springboot项目的启动类
+                'Start-Class': 'org.ktn.kindletonotion.KindleToNotionApplication'
+    }
+}
+
+jar.enabled = true
+bootJar.enabled = true

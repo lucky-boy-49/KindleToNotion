@@ -4,9 +4,10 @@ import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.ktn.kindletonotion.model.result.Deploy;
 import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.boot.system.ApplicationHome;
 
-import java.io.File;
-import java.io.FileWriter;
+import java.io.*;
+import java.nio.charset.StandardCharsets;
 
 /**
  * notion配置类
@@ -23,11 +24,11 @@ public class NotionConfigProperties {
 
     public void save(Deploy deploy) {
         try {
-            // 获取JAR包的路径
-            String jarPath = NotionConfigProperties.class.getProtectionDomain().getCodeSource().getLocation().toURI().getPath();
-            // 获取JAR包所在的目录路径
-            String jarDirectory = new File(jarPath).getParent();
-            String filePath = jarDirectory + File.separator + "secrets.properties";
+            ApplicationHome h = new ApplicationHome(getClass());
+            String path = h.getSource().getParentFile().toString();
+            log.info("JAR包所在目录:{}", path);
+            String filePath = path + File.separator + "application.properties";
+            log.info("配置文件路径:{}", filePath);
             File file = new File(filePath);
             if (!file.exists()) {
                 boolean success = file.createNewFile();
@@ -37,7 +38,8 @@ public class NotionConfigProperties {
                     log.error("创建配置文件失败");
                 }
             }
-            FileWriter writer = new FileWriter(file);
+            OutputStream outputStream = new FileOutputStream(file);
+            Writer writer = new OutputStreamWriter(outputStream, StandardCharsets.UTF_8);
             writer.write("");
             writer.write("# notion配置" + "\n");
             writer.write("notion.auth-token=" + deploy.authToken() + "\n");
