@@ -61,7 +61,7 @@ public class KindleToNotionController {
         // 读取所有笔记文件
         String filePath = kindleClient.kindle.getFilePath();
         if (filePath.isEmpty()) {
-            return new React(ReactEnum.FAILURE.getCode(), "无法找到文件", null);
+            return new React(ReactEnum.FAILURE.getCode(), "无法找到Kindle文件", null);
         }
         // 处理文件，并获取文件Map对象
         Map<String, Book> books = kindleClient.kindle.parseNotes(filePath);
